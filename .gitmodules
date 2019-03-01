@@ -1,0 +1,3 @@
+[submodule "StackNN"]
+	path = StackNN
+	url = https://github.com/viking-sudo-rm/StackNN/
