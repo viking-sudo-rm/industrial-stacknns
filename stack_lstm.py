@@ -42,7 +42,7 @@ class StackLSTMAgreementPredictor(Model):
             stack_params = torch.sigmoid(self._stack_module(h))
             push_strengths = stack_params[:, 0]
             pop_strengths = stack_params[:, 1]
-            self._pop_strength(torch.mean(pop_strengths))
+            self._pop_strength(torch.mean(push_strengths - pop_strengths))
             stack_summary = stack(h, push_strengths, pop_strengths)
 
         logits = torch.squeeze(self._classifier(h))
@@ -61,5 +61,5 @@ class StackLSTMAgreementPredictor(Model):
     def get_metrics(self, reset):
         return {
             "accuracy": self._accuracy.get_metric(reset),
-            "pop_strength": self._pop_strength.get_metric(reset),
+            "push_pop_strength": self._pop_strength.get_metric(reset),
         }
