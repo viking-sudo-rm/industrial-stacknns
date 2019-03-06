@@ -5,29 +5,35 @@ from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.training.metrics import BooleanAccuracy
 
 
-class SimpleLSTMAgreementPredictor(Model):
+class SimpleRNNAgreementPredictor(Model):
 
     def __init__(self,
                  vocab,
                  num_embeddings=10000,
                  embedding_dim=50,
-                 lstm_dim=650):
+                 rnn_dim=650,
+                 rnn_type=torch.nn.LSTM):
 
         super().__init__(vocab)
         embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
-        self._lstm = torch.nn.LSTM(embedding_dim, lstm_dim, batch_first=True)
-        self._linear = torch.nn.Linear(lstm_dim, 1)
+        self._rnn = torch.nn.LSTM(embedding_dim, rnn_dim, batch_first=True)
+        self._linear = torch.nn.Linear(rnn_dim, 1)
 
         self._accuracy = BooleanAccuracy()
         self._criterion = torch.nn.BCEWithLogitsLoss()
 
     def forward(self, sentence, label):
         embedded = self._embedder(sentence)
-        _, (final_lstm_state, _) = self._lstm(embedded)
-        final_lstm_state = torch.transpose(final_lstm_state, 0, 1)
-        logits = self._linear(final_lstm_state)
+
+        if isinstance(self._rnn, torch.nn.LSTM):
+            _, (final_rnn_state, _) = self._rnn(embedded)
+        else:
+            _, final_rnn_state = self._rnn(embedded)
+
+        final_rnn_state = torch.transpose(final_rnn_state, 0, 1)
+        logits = self._linear(final_rnn_state)
 
         logits = torch.squeeze(logits)
         prediction = (logits > 0.).float()

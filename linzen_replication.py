@@ -8,8 +8,8 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.training.trainer import Trainer
 import torch
 
-from simple_lstm import SimpleLSTMAgreementPredictor
-from stack_lstm import StackLSTMAgreementPredictor
+from simple_rnn import SimpleRNNAgreementPredictor
+from stack_rnn import StackRNNAgreementPredictor
 
 
 def main():
@@ -18,7 +18,8 @@ def main():
     validation_dataset = reader.read("data/rnn_agr_simple/numpred.val")
     vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
 
-    model = StackLSTMAgreementPredictor(vocab, lstm_dim=100)
+    model = StackRNNAgreementPredictor(vocab, rnn_dim=8, rnn_cell_type=torch.nn.GRUCell)
+    # model = SimpleRNNAgreementPredictor(vocab, rnn_dim=8, rnn_type=torch.nn.GRU)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])
@@ -29,7 +30,7 @@ def main():
                       iterator=iterator,
                       train_dataset=train_dataset,
                       validation_dataset=validation_dataset,
-                      patience=5)
+                      patience=20)
     trainer.train()
 
     with open("/tmp/model.th", "wb") as fh:
