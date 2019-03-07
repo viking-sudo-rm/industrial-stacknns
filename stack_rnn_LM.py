@@ -26,12 +26,15 @@ class StackRNNLanguageModel(Model):
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
         self._rnn_dim = rnn_dim
-        self._rnn_cell = rnn_cell_type(embedding_dim + rnn_dim, rnn_dim)
+        if rnn_cell_type is not None:
+            self._rnn_cell = rnn_cell_type(embedding_dim + rnn_dim, rnn_dim)
+        else:
+            self._rnn_cell = None
         self.feedforward = torch.nn.Sequential(
-                                        nn.Linear(embedding_dim + rnn_dim, rnn_dim),
-                                        nn.ReLU(),
-                                        nn.Linear(rnn_dim, rnn_dim),
-                                        nn.ReLU())
+                                        torch.nn.Linear(embedding_dim + rnn_dim, rnn_dim),
+                                        torch.nn.ReLU(),
+                                        torch.nn.Linear(rnn_dim, rnn_dim),
+                                        torch.nn.ReLU())
         self._stack_module = torch.nn.Linear(rnn_dim, 2)
         self._classifier = torch.nn.Linear(rnn_dim, self._vocab_size)
 
@@ -42,8 +45,8 @@ class StackRNNLanguageModel(Model):
         self._pop_strength = Average()
         self._criterion = torch.nn.CrossEntropyLoss()
 
-    def forward(self, batch, label=None):
-        embedded = self._embedder(batch)
+    def forward(self, sentence, label=None):
+        embedded = self._embedder(sentence)
         batch_size = embedded.size(0)
         sentence_length = embedded.size(1)
 
@@ -53,7 +56,7 @@ class StackRNNLanguageModel(Model):
 
         h_all_words = []
 
-        for t in range(sentence_length):
+        for t in range(sentence_length-1): # can't predict the next tag when you're at the last tag
             features = torch.cat([embedded[:, t], stack_summary], 1)
 
             if isinstance(self._rnn_cell, torch.nn.LSTMCell):
@@ -72,7 +75,7 @@ class StackRNNLanguageModel(Model):
             stack_summary = stack(h, push_strengths, pop_strengths)
             h_all_words.append(h)
 
-        logits = self._classifier(torch.stack(h_all_words))
+        logits = self._classifier(torch.stack(h_all_words, dim=1))
         prediction = torch.argmax(logits, dim=-1).float()
 
         results = {
@@ -80,9 +83,9 @@ class StackRNNLanguageModel(Model):
         }
 
         if label is not None:
-            label = label.float()
-            loss = self._criterion(logits, label)
-            accuracy = self._accuracy(prediction, label)
+            label = label[:,1:]
+            loss = self._criterion(logits.reshape(-1, self._vocab_size), label.reshape(-1))
+            accuracy = self._accuracy(prediction, label.float())
             results.update({
                 "accuracy": accuracy,
                 "loss": loss,

@@ -1,4 +1,4 @@
-#from agreement_environment import POSDatasetReader
+from data_readers.brown import BrownDatasetReader
 
 import logging
 import random
@@ -12,10 +12,9 @@ from stack_rnn_LM import StackRNNLanguageModel
 
 
 def main():
-    reader = BrownDatasetReader(append_null=False)
-    train_dataset = reader.read("data/rnn_agr_simple/numpred.train")
-    validation_dataset = reader.read("data/rnn_agr_simple/numpred.val")
-    vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
+    reader = BrownDatasetReader()
+    train_dataset = reader.read("data/brown.txt")
+    vocab = Vocabulary.from_instances(train_dataset)
 
     model = StackRNNLanguageModel(vocab, rnn_dim=8)
 
@@ -27,13 +26,13 @@ def main():
                       optimizer=optimizer,
                       iterator=iterator,
                       train_dataset=train_dataset,
-                      validation_dataset=validation_dataset,
-                      patience=20)
+                      # validation_dataset=validation_dataset,
+                      patience=10)
     trainer.train()
 
-    with open("/tmp/model.th", "wb") as fh:
+    with open("saved_models/model.th", "wb") as fh:
         torch.save(model.state_dict(), fh)
-    vocab.save_to_files("/tmp/vocabulary")
+    vocab.save_to_files("saved_models/vocabulary")
 
 
 if __name__ == "__main__":

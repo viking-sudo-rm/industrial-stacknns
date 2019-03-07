@@ -17,16 +17,16 @@ class BrownDatasetReader(DatasetReader):
     def __init__(self):
         super().__init__(lazy=False)
         self._token_indexers = {"tokens": SingleIdTokenIndexer()}
-        self._tag_indexers = {"tags": SingleIdTokenIndexer()}
+        #self._tag_indexers = {"tags": SingleIdTokenIndexer()}
 
     def _read(self, file_path):
         with open(file_path) as f:
             for line in f:
-                if line == "\n":
-                    continue
                 raw_sent = line.strip().split(" ")
+                if len(raw_sent) < 2:
+                    continue
                 pairs = [raw_pair.split("_") for raw_pair in raw_sent]
-                sentence = TextField([Token(tag) for _, tag in pairs], self._tag_indexers)
+                sentence = TextField([Token(tag) for _, tag in pairs], self._token_indexers)
                 tags = SequenceLabelField([tag for _, tag in pairs], sequence_field=sentence)
                 yield Instance({
                     "sentence": sentence,
