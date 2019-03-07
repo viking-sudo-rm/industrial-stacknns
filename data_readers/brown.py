@@ -7,7 +7,9 @@ from allennlp.data.token_indexers import SingleIdTokenIndexer
 
 class BrownDatasetReader(DatasetReader):
 
-    """To download the data, run:
+    """A reader for the Brown POS-tagging corpus.
+
+    To download the data, make sure you are in the industrial-stacknns/ directory, and run:
 
     wget -O data/brown.txt http://www.sls.hawaii.edu/bley-vroman/browntag_nolines.txt
     """
