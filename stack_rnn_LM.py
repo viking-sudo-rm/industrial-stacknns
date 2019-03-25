@@ -76,7 +76,7 @@ class StackRNNLanguageModel(Model):
             h_all_words.append(h)
 
         logits = self._classifier(torch.stack(h_all_words, dim=1))
-        prediction = torch.argmax(logits, dim=-1).float()
+        prediction = torch.argmax(logits, dim=2).float()
 
         results = {
             "prediction": prediction,

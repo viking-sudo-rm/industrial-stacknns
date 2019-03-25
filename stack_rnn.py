@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 
 from StackNN.structs import Stack
+from StackNN.control_layer import ControlLayer
 
 
 class StackRNNAgreementPredictor(Model):
@@ -24,11 +25,12 @@ class StackRNNAgreementPredictor(Model):
 
         self._rnn_dim = rnn_dim
         self._rnn_cell = rnn_cell_type(embedding_dim + rnn_dim, rnn_dim)
-        self._stack_module = torch.nn.Linear(rnn_dim, 2)
+        # self._stack_module = torch.nn.Linear(rnn_dim, 2)
+        self._control_layer = ControlLayer(rnn_dim, 1, 4)
         self._classifier = torch.nn.Linear(rnn_dim, 1)
 
-        self._push_activation_fn = push_activation_fn
-        self._pop_activation_fn = pop_activation_fn
+        # self._push_activation_fn = push_activation_fn
+        # self._pop_activation_fn = pop_activation_fn
 
         self._accuracy = BooleanAccuracy()
         self._pop_strength = Average()
@@ -51,11 +53,10 @@ class StackRNNAgreementPredictor(Model):
             else:
                 h = self._rnn_cell(features, h)
 
-            stack_params = self._stack_module(h)
-            push_strengths = self._push_activation_fn(stack_params[:, 0])
-            pop_strengths = self._pop_activation_fn(stack_params[:, 1])
+            # TODO: Try using stack vectors different than LSTM activations?
+            _, push_strengths, pop_strengths, read_strengths = self._control_layer(h)
             self._pop_strength(torch.mean(push_strengths - pop_strengths))
-            stack_summary = stack(h, push_strengths, pop_strengths)
+            stack_summary = stack(h, push_strengths, pop_strengths, read_strengths)
 
         logits = torch.squeeze(self._classifier(h))
         prediction = (logits > 0.).float()

@@ -18,7 +18,7 @@ class SimpleRNNAgreementPredictor(Model):
         embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
-        self._rnn = torch.nn.LSTM(embedding_dim, rnn_dim, batch_first=True)
+        self._rnn = rnn_type(embedding_dim, rnn_dim, batch_first=True)
         self._linear = torch.nn.Linear(rnn_dim, 1)
 
         self._accuracy = BooleanAccuracy()

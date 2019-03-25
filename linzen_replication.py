@@ -18,8 +18,8 @@ def main():
     validation_dataset = reader.read("data/rnn_agr_simple/numpred.val")
     vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
 
-    model = StackRNNAgreementPredictor(vocab, rnn_dim=8, rnn_cell_type=torch.nn.GRUCell)
-    # model = SimpleRNNAgreementPredictor(vocab, rnn_dim=8, rnn_type=torch.nn.GRU)
+    model = StackRNNAgreementPredictor(vocab, rnn_dim=100, rnn_cell_type=torch.nn.GRUCell)
+    # model = SimpleRNNAgreementPredictor(vocab, rnn_dim=1, rnn_type=torch.nn.GRU)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])
@@ -30,7 +30,7 @@ def main():
                       iterator=iterator,
                       train_dataset=train_dataset,
                       validation_dataset=validation_dataset,
-                      patience=20)
+                      patience=5)
     trainer.train()
 
     with open("/tmp/model.th", "wb") as fh:
