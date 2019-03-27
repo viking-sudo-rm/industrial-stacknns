@@ -15,22 +15,23 @@ class StackRNNAgreementPredictor(Model):
                  num_embeddings=10000,
                  embedding_dim=50,
                  rnn_dim=650,
+                 stack_dim=16,
                  rnn_cell_type=torch.nn.LSTMCell,
                  push_activation_fn=torch.sigmoid,
-                 pop_activation_fn=F.relu):
+                 pop_activation_fn=F.relu,
+                 push_rnn_state=False):
 
         super().__init__(vocab)
         embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
         self._rnn_dim = rnn_dim
-        self._rnn_cell = rnn_cell_type(embedding_dim + rnn_dim, rnn_dim)
-        # self._stack_module = torch.nn.Linear(rnn_dim, 2)
-        self._control_layer = ControlLayer(rnn_dim, 1, 4)
-        self._classifier = torch.nn.Linear(rnn_dim, 1)
+        self._stack_dim = stack_dim
+        self._push_rnn_state = push_rnn_state
 
-        # self._push_activation_fn = push_activation_fn
-        # self._pop_activation_fn = pop_activation_fn
+        self._rnn_cell = rnn_cell_type(embedding_dim + stack_dim, rnn_dim)
+        self._control_layer = ControlLayer(rnn_dim, stack_dim, vision=4)
+        self._classifier = torch.nn.Linear(rnn_dim, 1)
 
         self._accuracy = BooleanAccuracy()
         self._pop_strength = Average()
@@ -42,8 +43,8 @@ class StackRNNAgreementPredictor(Model):
         sentence_length = embedded.size(1)
 
         h, c = torch.zeros([batch_size, self._rnn_dim]), torch.zeros([batch_size, self._rnn_dim])
-        stack = Stack(batch_size, self._rnn_dim)
-        stack_summary = torch.zeros([batch_size, self._rnn_dim])
+        stack = Stack(batch_size, self._stack_dim)
+        stack_summary = torch.zeros([batch_size, self._stack_dim])
 
         for t in range(sentence_length):
             features = torch.cat([embedded[:, t], stack_summary], 1)
@@ -53,10 +54,11 @@ class StackRNNAgreementPredictor(Model):
             else:
                 h = self._rnn_cell(features, h)
 
-            # TODO: Try using stack vectors different than LSTM activations?
-            _, push_strengths, pop_strengths, read_strengths = self._control_layer(h)
+            # Can push either stack vectors or hidden state onto the stack.
+            stack_vectors, push_strengths, pop_strengths, read_strengths = self._control_layer(h)
             self._pop_strength(torch.mean(push_strengths - pop_strengths))
-            stack_summary = stack(h, push_strengths, pop_strengths, read_strengths)
+            stack_vectors = stack_vectors if not self._push_rnn_state else h
+            stack_summary = stack(stack_vectors, push_strengths, pop_strengths, read_strengths)
 
         logits = torch.squeeze(self._classifier(h))
         prediction = (logits > 0.).float()

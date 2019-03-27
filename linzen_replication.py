@@ -19,7 +19,7 @@ def main():
     vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
 
     model = StackRNNAgreementPredictor(vocab, rnn_dim=100, rnn_cell_type=torch.nn.GRUCell)
-    # model = SimpleRNNAgreementPredictor(vocab, rnn_dim=1, rnn_type=torch.nn.GRU)
+    # model = SimpleRNNAgreementPredictor(vocab, rnn_dim=18, rnn_type=torch.nn.GRU)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])
