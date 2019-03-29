@@ -44,6 +44,7 @@ class StackRNNLanguageModel(Model):
         self._accuracy = BooleanAccuracy()
         self._pop_strength = Average()
         self._criterion = torch.nn.CrossEntropyLoss()
+        self.instruction_history = None
 
     def forward(self, sentence, label=None):
         embedded = self._embedder(sentence)
@@ -55,6 +56,7 @@ class StackRNNLanguageModel(Model):
         stack_summary = torch.zeros([batch_size, self._stack_dim])
 
         h_all_words = []
+        instructions_list = []
 
         for t in range(sentence_length-1): # can't predict the next tag when you're at the last tag
             features = torch.cat([embedded[:, t], stack_summary], 1)
@@ -68,23 +70,28 @@ class StackRNNLanguageModel(Model):
             else:
                 raise NotImplementedError
 
+            instructions = self._control_layer(h)
+            self._pop_strength(torch.mean(instructions.push_strengths - instructions.pop_strengths))
+            stack_summary = stack(*instructions.make_tuple())
+
             h_all_words.append(h)
-            stack_params = self._control_layer(h)
-            # self._pop_strength(torch.mean(push_strengths - pop_strengths))
-            stack_summary = stack(*stack_params)
+            instructions_list.append(instructions)
 
         stacked_h = torch.stack(h_all_words, dim=1)
         logits = self._classifier(stacked_h)
-        prediction = torch.argmax(logits, dim=2).float()
+        predictions = torch.argmax(logits, dim=2).float()
 
         results = {
-            "prediction": prediction,
+            "predictions": predictions,
+            "instructions": instructions_list,
         }
+
+
 
         if label is not None:
             label = label[:,1:]
             loss = self._criterion(logits.reshape(-1, self._vocab_size), label.reshape(-1))
-            accuracy = self._accuracy(prediction.reshape(-1), label.reshape(-1).float())
+            accuracy = self._accuracy(predictions.reshape(-1), label.reshape(-1).float())
             results.update({
                 "accuracy": accuracy,
                 "loss": loss,
@@ -95,5 +102,5 @@ class StackRNNLanguageModel(Model):
     def get_metrics(self, reset):
         return {
             "accuracy": self._accuracy.get_metric(reset),
-            # "push_pop_strength": self._pop_strength.get_metric(reset),
+            "push_pop_strength": self._pop_strength.get_metric(reset),
         }

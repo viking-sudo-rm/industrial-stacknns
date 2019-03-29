@@ -53,10 +53,11 @@ class StackRNNAgreementPredictor(Model):
                 h = self._rnn_cell(features, h)
 
             # Can push either stack vectors or hidden state onto the stack.
-            stack_vectors, push_strengths, pop_strengths, read_strengths = self._control_layer(h)
-            self._pop_strength(torch.mean(push_strengths - pop_strengths))
-            stack_vectors = stack_vectors if not self._push_rnn_state else h
-            stack_summary = stack(stack_vectors, push_strengths, pop_strengths, read_strengths)
+            instructions = self._control_layer(h)
+            self._pop_strength(torch.mean(instructions.push_strengths - instructions.pop_strengths))
+            if self._push_rnn_state:
+                instructions.push_vectors = h
+            stack_summary = stack(*instructions.make_tuple())
 
         logits = torch.squeeze(self._classifier(h))
         prediction = (logits > 0.).float()
