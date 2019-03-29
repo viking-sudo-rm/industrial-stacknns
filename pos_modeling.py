@@ -27,7 +27,7 @@ def main():
                       iterator=iterator,
                       train_dataset=train_dataset,
                       # validation_dataset=validation_dataset,
-                      patience=10)
+                     )
     trainer.train()
 
     with open("saved_models/model.th", "wb") as fh:
