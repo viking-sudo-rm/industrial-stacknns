@@ -17,8 +17,6 @@ class StackRNNAgreementPredictor(Model):
                  rnn_dim=650,
                  stack_dim=16,
                  rnn_cell_type=torch.nn.LSTMCell,
-                 push_activation_fn=torch.sigmoid,
-                 pop_activation_fn=F.relu,
                  push_rnn_state=False):
 
         super().__init__(vocab)

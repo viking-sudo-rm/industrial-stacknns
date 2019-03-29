@@ -16,7 +16,7 @@ def main():
     train_dataset = reader.read("data/brown.txt")
     vocab = Vocabulary.from_instances(train_dataset)
 
-    model = StackRNNLanguageModel(vocab, rnn_dim=100)
+    model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])

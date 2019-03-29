@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 
 from StackNN.structs import Stack
+from StackNN.control_layer import ControlLayer
 
 
 class StackRNNLanguageModel(Model):
@@ -13,10 +14,9 @@ class StackRNNLanguageModel(Model):
                  vocab,
                  num_embeddings=10000,
                  embedding_dim=None,
+                 stack_dim=16,
                  rnn_dim=650,
-                 rnn_cell_type=None,
-                 push_activation_fn=torch.sigmoid,
-                 pop_activation_fn=F.relu):
+                 rnn_cell_type=torch.nn.LSTMCell):
 
         super().__init__(vocab)
         self._vocab_size = vocab.get_vocab_size()
@@ -25,21 +25,21 @@ class StackRNNLanguageModel(Model):
         embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
+        self._stack_dim = stack_dim
         self._rnn_dim = rnn_dim
+
         if rnn_cell_type is not None:
-            self._rnn_cell = rnn_cell_type(embedding_dim + rnn_dim, rnn_dim)
+            self._rnn_cell = rnn_cell_type(embedding_dim + stack_dim, rnn_dim)
         else:
             self._rnn_cell = None
-        self.feedforward = torch.nn.Sequential(
-                                        torch.nn.Linear(embedding_dim + rnn_dim, rnn_dim),
-                                        torch.nn.ReLU(),
-                                        torch.nn.Linear(rnn_dim, rnn_dim),
-                                        torch.nn.ReLU())
-        self._stack_module = torch.nn.Linear(rnn_dim, 2)
-        self._classifier = torch.nn.Linear(rnn_dim, self._vocab_size)
+            self.feedforward = torch.nn.Sequential(
+                                            torch.nn.Linear(embedding_dim + rnn_dim, rnn_dim),
+                                            torch.nn.ReLU(),
+                                            torch.nn.Linear(rnn_dim, rnn_dim),
+                                            torch.nn.ReLU())
 
-        self._push_activation_fn = push_activation_fn
-        self._pop_activation_fn = pop_activation_fn
+        self._control_layer = ControlLayer(rnn_dim, stack_dim, vision=4)
+        self._classifier = torch.nn.Linear(rnn_dim, self._vocab_size)
 
         self._accuracy = BooleanAccuracy()
         self._pop_strength = Average()
@@ -51,8 +51,8 @@ class StackRNNLanguageModel(Model):
         sentence_length = embedded.size(1)
 
         h, c = torch.zeros([batch_size, self._rnn_dim]), torch.zeros([batch_size, self._rnn_dim])
-        stack = Stack(batch_size, self._rnn_dim)
-        stack_summary = torch.zeros([batch_size, self._rnn_dim])
+        stack = Stack(batch_size, self._stack_dim)
+        stack_summary = torch.zeros([batch_size, self._stack_dim])
 
         h_all_words = []
 
@@ -66,16 +66,15 @@ class StackRNNLanguageModel(Model):
             elif self._rnn_cell is None:
                 h = self.feedforward(features)
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
 
-            stack_params = self._stack_module(h)
-            push_strengths = self._push_activation_fn(stack_params[:, 0])
-            pop_strengths = self._pop_activation_fn(stack_params[:, 1])
-            self._pop_strength(torch.mean(push_strengths - pop_strengths))
-            stack_summary = stack(h, push_strengths, pop_strengths)
             h_all_words.append(h)
+            stack_params = self._control_layer(h)
+            # self._pop_strength(torch.mean(push_strengths - pop_strengths))
+            stack_summary = stack(*stack_params)
 
-        logits = self._classifier(torch.stack(h_all_words, dim=1))
+        stacked_h = torch.stack(h_all_words, dim=1)
+        logits = self._classifier(stacked_h)
         prediction = torch.argmax(logits, dim=2).float()
 
         results = {
@@ -85,7 +84,7 @@ class StackRNNLanguageModel(Model):
         if label is not None:
             label = label[:,1:]
             loss = self._criterion(logits.reshape(-1, self._vocab_size), label.reshape(-1))
-            accuracy = self._accuracy(prediction, label.float())
+            accuracy = self._accuracy(prediction.reshape(-1), label.reshape(-1).float())
             results.update({
                 "accuracy": accuracy,
                 "loss": loss,
@@ -96,5 +95,5 @@ class StackRNNLanguageModel(Model):
     def get_metrics(self, reset):
         return {
             "accuracy": self._accuracy.get_metric(reset),
-            "push_pop_strength": self._pop_strength.get_metric(reset),
+            # "push_pop_strength": self._pop_strength.get_metric(reset),
         }
