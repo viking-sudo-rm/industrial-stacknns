@@ -48,6 +48,8 @@ class StackRNNAgreementPredictor(Model):
     stack = Stack(batch_size, self._stack_dim)
     stack_summary = torch.zeros([batch_size, self._stack_dim])
 
+    instructions_list = []
+
     for t in range(sentence_length):
       features = torch.cat([embedded[:, t], stack_summary], 1)
 
@@ -64,11 +66,14 @@ class StackRNNAgreementPredictor(Model):
         instructions.push_vectors = h
       stack_summary = stack(*instructions.make_tuple())
 
+      instructions_list.append(instructions)
+
     logits = torch.squeeze(self._classifier(h))
     prediction = (logits > 0.).float()
 
     results = {
         "prediction": prediction,
+        "instructions": instructions_list,
     }
 
     if label is not None:
