@@ -1,8 +1,8 @@
 import torch
 from allennlp.data.vocabulary import Vocabulary
 
+from data_readers.brown import BrownDatasetReader
 from stack_rnn_LM import StackRNNLanguageModel
-from predictor import StackTaskPredictor
 
 
 def main():
@@ -12,10 +12,14 @@ def main():
     with open("saved_models/stack-brown.th", "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
-    predictor = StackTaskPredictor(model, vocab)
+    reader = BrownDatasetReader()
+    dataset = reader.read("data/brown.txt")
 
-    results = predictor.predict("AT NP NN JJ")
-    print(results)
+    for instance in dataset:
+        results = model(instance)
+        print(results)
+        break
+
 
 if __name__ == "__main__":
     main()
