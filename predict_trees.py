@@ -4,8 +4,7 @@ from allennlp.data.vocabulary import Vocabulary
 from data_readers.brown import BrownDatasetReader
 from stack_rnn_LM import StackRNNLanguageModel
 
-
-def main():
+def brown_predict(sentence):
     vocab = Vocabulary.from_files("saved_models/vocabulary-brown")
     model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
 
@@ -20,6 +19,11 @@ def main():
         print(results)
         break
 
+    return results
+
+
+def main():
+    print(brown_predict(["AT", "NP", "NN", "JJ"]))
 
 if __name__ == "__main__":
     main()
