@@ -2,6 +2,7 @@ import torch
 from allennlp.data.vocabulary import Vocabulary
 
 from data_readers.brown import BrownDatasetReader
+from predictor import TreePredictor
 from stack_rnn_LM import StackRNNLanguageModel
 
 def brown_predict(sentence):
@@ -11,19 +12,15 @@ def brown_predict(sentence):
     with open("saved_models/stack-brown.th", "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
-    reader = BrownDatasetReader()
-    dataset = reader.read("data/brown.txt")
-
-    for instance in dataset:
-        results = model(instance)
-        print(results)
-        break
-
-    return results
+    dataset_reader = BrownDatasetReader()
+    predictor = TreePredictor(model, dataset_reader)
+    return predictor.predict(sentence)
 
 
 def main():
-    print(brown_predict(["AT", "NP", "NN", "JJ"]))
+    prediction = brown_predict("AT NP NN JJ")
+    print("Prediction", prediction)
+
 
 if __name__ == "__main__":
     main()

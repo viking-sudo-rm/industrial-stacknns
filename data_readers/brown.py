@@ -25,10 +25,13 @@ class BrownDatasetReader(DatasetReader):
                 raw_sent = line.strip().split(" ")
                 if len(raw_sent) < 2:
                     continue
-                pairs = [raw_pair.split("_") for raw_pair in raw_sent]
-                sentence = TextField([Token(tag) for _, tag in pairs], self._token_indexers)
-                tags = SequenceLabelField([tag for _, tag in pairs], sequence_field=sentence)
-                yield Instance({
-                    "sentence": sentence,
-                    "label": tags,
-                })
+                tags = [raw_pair.split("_")[1] for raw_pair in raw_sent]
+                yield self.text_to_instance(tags)
+
+    def text_to_instance(self, tags):
+        sentence = TextField([Token(tag) for tag in tags], self._token_indexers)
+        labels = SequenceLabelField([tag for tag in tags], sequence_field=sentence)
+        yield Instance({
+            "sentence": sentence,
+            "label": labels,
+        })
