@@ -11,5 +11,5 @@ class StackTaskPredictor:
 
     def predict(self, sentence):
         indices = [self._vocabulary.get_token_index(token) for token in sentence]
-        tensor = torch.Tensor([indices])
-        return self._model(tensor)
+        tensor = torch.LongTensor([indices])
+        return self._model({'tokens':tensor})
