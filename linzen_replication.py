@@ -14,8 +14,8 @@ from stack_rnn import StackRNNAgreementPredictor
 
 def main():
     reader = LinzenDatasetReader(append_null=False)
-    train_dataset = reader.read("data/rnn_agr_simple/numpred.train")
-    validation_dataset = reader.read("data/rnn_agr_simple/numpred.val")
+    train_dataset = reader.read("StackNN/data/rnn_agr_simple/numpred.train")
+    validation_dataset = reader.read("StackNN/data/rnn_agr_simple/numpred.val")
     vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
 
     model = StackRNNAgreementPredictor(vocab, rnn_dim=100, rnn_cell_type=torch.nn.GRUCell)
