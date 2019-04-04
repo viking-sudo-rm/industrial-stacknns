@@ -7,6 +7,7 @@ from allennlp.data import Instance
 from allennlp.data.fields import TextField, LabelField
 from allennlp.data.tokenizers import Token
 
+
 class LinzenEnvironment:
 
   def __init__(self, sentence, label):
@@ -101,6 +102,8 @@ class LinzenEnvironment:
     if len(self._stack) > 0:
       return self._stack[0]
 
+
+@DatasetReader.register("linzen_dataset_reader")
 class LinzenDatasetReader(DatasetReader):
   def __init__(self, append_null=True):
     super().__init__(lazy=False)
@@ -117,26 +120,28 @@ class LinzenDatasetReader(DatasetReader):
           sent.append(Token("#"))
         yield Instance({"sentence": TextField(sent, self.token_indexers), "label": LabelField(str(label))})
 
+
 class LinzenDataset:
-    def __init__(self, filename):
-        self.reader = LinzenDatasetReader()
-        self.dataset = self.reader.read(filename)
-        self.vocab = Vocabulary.from_instances(self.dataset)
-        self.dataset_list = list(iter(self.dataset))
-        self.instance = None
-        self._label = None
+  def __init__(self, filename):
+    self.reader = LinzenDatasetReader()
+    self.dataset = self.reader.read(filename)
+    self.vocab = Vocabulary.from_instances(self.dataset)
+    self.dataset_list = list(iter(self.dataset))
+    self.instance = None
+    self._label = None
 
-    def get_env(self):
-        idx = random.randint(0, len(self.dataset_list) - 1)
-        self.instance = self.dataset_list[idx]
-        sentence = [self.vocab.get_token_index(str(token)) for token in self.instance["sentence"]]
-        self._label = int(self.instance["label"].label)
-        return LinzenEnvironment(sentence, self._label)
+  def get_env(self):
+    idx = random.randint(0, len(self.dataset_list) - 1)
+    self.instance = self.dataset_list[idx]
+    sentence = [self.vocab.get_token_index(
+        str(token)) for token in self.instance["sentence"]]
+    self._label = int(self.instance["label"].label)
+    return LinzenEnvironment(sentence, self._label)
 
-    @property
-    def input_string(self):
-        return ' '.join(token.text for token in self.instance["sentence"])
+  @property
+  def input_string(self):
+    return ' '.join(token.text for token in self.instance["sentence"])
 
-    @property
-    def label(self):
-        return str(self._label)
+  @property
+  def label(self):
+    return str(self._label)

@@ -1,0 +1,22 @@
+{
+    "dataset_reader": {
+        "type": "linzen_dataset_reader"
+    },
+    "train_data_path": "StackNN/data/linzen/rnn_agr_simple/numpred.train",
+    "validation_data_path": "StackNN/data/linzen/rnn_agr_simple/numpred.val",
+    "model": {
+        "type": "stack_agreement_model",
+        "rnn_dim": 100,
+        "rnn_cell_type": "gru"
+    },
+    "iterator": {
+        "type": "bucket",
+        "batch_size": 16,
+        "sorting_keys": [["sentence", "num_tokens"]]
+    },
+    "trainer": {
+        "optimizer": "adam",
+        "patience": 5,
+        "cuda_device": -1
+    }
+}
