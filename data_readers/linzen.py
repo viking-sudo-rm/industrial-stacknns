@@ -24,7 +24,7 @@ class LinzenDatasetReader(DatasetReader):
         yield Instance({"sentence": TextField(sent, self.token_indexers), "label": LabelField(str(label))})
 
 
-class LinzenDatasetLMReader(DatasetReader):
+class LinzenLMDatasetReader(DatasetReader):
 
   """Dataset reader for Linzen as a language modeling task."""
 
