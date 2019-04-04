@@ -26,13 +26,14 @@ def main():
                       optimizer=optimizer,
                       iterator=iterator,
                       train_dataset=train_dataset,
+                      num_epochs=5
                       # validation_dataset=validation_dataset,
                      )
     trainer.train()
 
-    with open("saved_models/model.th", "wb") as fh:
+    with open("saved_models/stack-brown.th", "wb") as fh:
         torch.save(model.state_dict(), fh)
-    vocab.save_to_files("saved_models/vocabulary")
+    vocab.save_to_files("saved_models/vocabulary-brown")
 
 
 if __name__ == "__main__":

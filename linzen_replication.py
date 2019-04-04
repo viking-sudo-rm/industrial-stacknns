@@ -1,5 +1,3 @@
-from agreement_environment import LinzenDatasetReader
-
 import logging
 import random
 
@@ -8,6 +6,7 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.training.trainer import Trainer
 import torch
 
+from data_readers.linzen import LinzenDatasetReader
 from simple_rnn import SimpleRNNAgreementPredictor
 from stack_rnn import StackRNNAgreementPredictor
 
