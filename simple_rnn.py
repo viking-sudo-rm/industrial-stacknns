@@ -4,7 +4,7 @@ from allennlp.models import Model
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
 from allennlp.training.metrics import BooleanAccuracy
 
-
+@Model.register("simple_agreement_model")
 class SimpleRNNAgreementPredictor(Model):
 
     def __init__(self,
@@ -47,5 +47,5 @@ class SimpleRNNAgreementPredictor(Model):
             "loss": loss,
         }
 
-    def get_metrics(self, reset):
+    def get_metrics(self, reset=False):
         return {"accuracy": self._accuracy.get_metric(reset)}
