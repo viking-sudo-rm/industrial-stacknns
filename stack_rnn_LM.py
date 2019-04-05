@@ -81,11 +81,19 @@ class StackRNNLanguageModel(Model):
         logits = self._classifier(stacked_h)
         predictions = torch.argmax(logits, dim=2).float()
 
+        push_strengths = torch.stack([instr.push_strengths for instr in instructions_list], dim=-1)
         pop_strengths = torch.stack([instr.pop_strengths for instr in instructions_list], dim=-1)
+        read_strengths = torch.stack([instr.read_strengths for instr in instructions_list], dim=-1)
+        pop_dists = torch.stack([instr.pop_distributions for instr in instructions_list], dim=-2)
+        read_dists = torch.stack([instr.read_distributions for instr in instructions_list], dim=-2)
 
         results = {
             "predictions": predictions,
+            "push_strengths": push_strengths,
+            "read_strengths": read_strengths,
             "pop_strengths": pop_strengths,
+            "pop_dists": pop_dists,
+            "read_dists": read_dists,
         }
 
         if label is not None:
