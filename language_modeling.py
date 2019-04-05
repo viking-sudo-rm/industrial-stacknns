@@ -15,7 +15,7 @@ def main():
     reader = BrownDatasetReader()
     train_dataset = reader.read("data/brown.txt")
     vocab = Vocabulary.from_instances(train_dataset)
-    dataset_name = "brownlm"
+    dataset_name = "brown"
 
     # reader = LinzenLMDatasetReader()
     # train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
