@@ -19,7 +19,7 @@ def brown_predict(sentence):
 
 
 def main():
-    sentence = "AT NP NN JJ"
+    sentence = "AT JJ NP VBD PPS DOD VB"
     prediction = brown_predict(sentence)
     pop_strengths = prediction["pop_strengths"]
 
