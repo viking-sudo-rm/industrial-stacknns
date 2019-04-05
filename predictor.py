@@ -18,7 +18,6 @@ class TreePredictor(Predictor):
 
     @overrides
     def _json_to_instance(self, json_dict):
-        print("_json_to_instance", json_dict)
         sentence = json_dict["sentence"]
         # TODO: Might want to use a real tokenizer here.
         tokens = sentence.split(" ")

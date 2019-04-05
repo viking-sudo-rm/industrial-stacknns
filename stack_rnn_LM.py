@@ -58,7 +58,7 @@ class StackRNNLanguageModel(Model):
         h_all_words = []
         instructions_list = []
 
-        for t in range(sentence_length-1): # can't predict the next tag when you're at the last tag
+        for t in range(sentence_length): # can't predict the next tag when you're at the last tag
             features = torch.cat([embedded[:, t], stack_summary], 1)
 
             if isinstance(self._rnn_cell, torch.nn.LSTMCell):
@@ -81,21 +81,17 @@ class StackRNNLanguageModel(Model):
         logits = self._classifier(stacked_h)
         predictions = torch.argmax(logits, dim=2).float()
 
+        pop_strengths = torch.stack([instr.pop_strengths for instr in instructions_list], dim=-1)
+
         results = {
             "predictions": predictions,
-            "instructions": instructions_list,
+            "pop_strengths": pop_strengths,
         }
 
-
-
         if label is not None:
-            label = label[:,1:]
+            self._accuracy(predictions.reshape(-1), label.reshape(-1).float())
             loss = self._criterion(logits.reshape(-1, self._vocab_size), label.reshape(-1))
-            accuracy = self._accuracy(predictions.reshape(-1), label.reshape(-1).float())
-            results.update({
-                "accuracy": accuracy,
-                "loss": loss,
-            })
+            results["loss"] = loss
 
         return results
 

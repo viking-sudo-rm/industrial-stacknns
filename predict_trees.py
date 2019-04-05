@@ -1,6 +1,7 @@
 import torch
 from allennlp.data.vocabulary import Vocabulary
 
+from build_trees import greedy_parse
 from data_readers.brown import BrownDatasetReader
 from predictor import TreePredictor
 from stack_rnn_LM import StackRNNLanguageModel
@@ -18,8 +19,15 @@ def brown_predict(sentence):
 
 
 def main():
-    prediction = brown_predict("AT NP NN JJ")
-    
+    sentence = "AT NP NN JJ"
+    prediction = brown_predict(sentence)
+    pop_strengths = prediction["pop_strengths"]
+
+    print("Parsing..")
+    pairs = list(zip(sentence.split(" "), pop_strengths))
+    parse = greedy_parse(pairs)
+    print("Got parse", parse)
+
 
 if __name__ == "__main__":
     main()
