@@ -19,8 +19,7 @@ def brown_predict(sentence):
 
 def main():
     prediction = brown_predict("AT NP NN JJ")
-    print("Prediction", prediction)
-
+    
 
 if __name__ == "__main__":
     main()
