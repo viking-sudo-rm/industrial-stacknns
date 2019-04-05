@@ -1,5 +1,3 @@
-from data_readers.brown import BrownDatasetReader
-
 import logging
 import random
 
@@ -8,13 +6,19 @@ from allennlp.data.vocabulary import Vocabulary
 from allennlp.training.trainer import Trainer
 import torch
 
+from data_readers.brown import BrownDatasetReader
+from data_readers.linzen import LinzenLMDatasetReader
 from stack_rnn_LM import StackRNNLanguageModel
 
 
 def main():
-    reader = BrownDatasetReader()
-    train_dataset = reader.read("data/brown.txt")
-    vocab = Vocabulary.from_instances(train_dataset)
+    # reader = BrownDatasetReader()
+    # train_dataset = reader.read("data/brown.txt")
+
+    reader = LinzenLMDatasetReader()
+    train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
+    validation_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.val")
+    vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
 
     model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
 
@@ -26,14 +30,15 @@ def main():
                       optimizer=optimizer,
                       iterator=iterator,
                       train_dataset=train_dataset,
-                      num_epochs=5
-                      # validation_dataset=validation_dataset,
+                      num_epochs=5,
+                      validation_dataset=validation_dataset,
+                      patience=5
                      )
     trainer.train()
 
-    with open("saved_models/stack-brown.th", "wb") as fh:
+    with open("saved_models/stack-linzenlm.th", "wb") as fh:
         torch.save(model.state_dict(), fh)
-    vocab.save_to_files("saved_models/vocabulary-brown")
+    vocab.save_to_files("saved_models/vocabulary-linzenlm")
 
 
 if __name__ == "__main__":
