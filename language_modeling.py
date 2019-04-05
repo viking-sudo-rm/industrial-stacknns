@@ -12,13 +12,16 @@ from stack_rnn_LM import StackRNNLanguageModel
 
 
 def main():
-    # reader = BrownDatasetReader()
-    # train_dataset = reader.read("data/brown.txt")
+    reader = BrownDatasetReader()
+    train_dataset = reader.read("data/brown.txt")
+    vocab = Vocabulary.from_instances(train_dataset)
+    dataset_name = "brownlm"
 
-    reader = LinzenLMDatasetReader()
-    train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
-    validation_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.val")
-    vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
+    # reader = LinzenLMDatasetReader()
+    # train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
+    # validation_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.val")
+    # vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
+    # dataset_name = "linzenlm"
 
     model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
 
@@ -30,15 +33,15 @@ def main():
                       optimizer=optimizer,
                       iterator=iterator,
                       train_dataset=train_dataset,
-                      num_epochs=5,
-                      validation_dataset=validation_dataset,
-                      patience=5
+                      num_epochs=5
+                      # validation_dataset=validation_dataset,
+                      # patience=5
                      )
     trainer.train()
 
-    with open("saved_models/stack-linzenlm.th", "wb") as fh:
+    with open("saved_models/stack-%s.th" % dataset_name, "wb") as fh:
         torch.save(model.state_dict(), fh)
-    vocab.save_to_files("saved_models/vocabulary-linzenlm")
+    vocab.save_to_files("saved_models/vocabulary-%s" % dataset_name)
 
 
 if __name__ == "__main__":

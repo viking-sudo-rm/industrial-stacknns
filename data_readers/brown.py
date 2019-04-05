@@ -14,8 +14,9 @@ class BrownDatasetReader(DatasetReader):
     wget -O data/brown.txt http://www.sls.hawaii.edu/bley-vroman/browntag_nolines.txt
     """
 
-    def __init__(self, labels=True):
+    def __init__(self, words=False, labels=True):
         super().__init__(lazy=False)
+        self._words = words
         self._labels = labels
         self._token_indexers = {"tokens": SingleIdTokenIndexer()}
         #self._tag_indexers = {"tags": SingleIdTokenIndexer()}
@@ -26,8 +27,9 @@ class BrownDatasetReader(DatasetReader):
                 raw_sent = line.strip().split(" ")
                 if len(raw_sent) < 2:
                     continue
-                tags = [raw_pair.split("_")[1] for raw_pair in raw_sent]
-                yield self.text_to_instance(tags)
+                token_idx = 0 if self._words else 1
+                tokens = [raw_pair.split("_")[token_idx] for raw_pair in raw_sent]
+                yield self.text_to_instance(tokens)
 
     def text_to_instance(self, text):
         if self._labels:
