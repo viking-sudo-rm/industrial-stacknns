@@ -13,7 +13,7 @@ def brown_predict(sentence):
     with open("saved_models/stack-brown.th", "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
-    dataset_reader = BrownDatasetReader()
+    dataset_reader = BrownDatasetReader(labels=False)
     predictor = TreePredictor(model, dataset_reader)
     return predictor.predict(sentence)
 

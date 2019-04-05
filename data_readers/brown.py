@@ -14,8 +14,9 @@ class BrownDatasetReader(DatasetReader):
     wget -O data/brown.txt http://www.sls.hawaii.edu/bley-vroman/browntag_nolines.txt
     """
 
-    def __init__(self):
+    def __init__(self, labels=True):
         super().__init__(lazy=False)
+        self._labels = labels
         self._token_indexers = {"tokens": SingleIdTokenIndexer()}
         #self._tag_indexers = {"tags": SingleIdTokenIndexer()}
 
@@ -29,10 +30,17 @@ class BrownDatasetReader(DatasetReader):
                 yield self.text_to_instance(tags)
 
     def text_to_instance(self, text):
-        sentence = TextField([Token(word) for word in text[:-1]],
-                             self._token_indexers)
-        labels = SequenceLabelField(text[1:], sequence_field=sentence)
-        return Instance({
-            "sentence": sentence,
-            "label": labels,
-        })
+        if self._labels:
+            sentence = TextField([Token(word) for word in text[:-1]],
+                                 self._token_indexers)
+            labels = SequenceLabelField(text[1:], sequence_field=sentence)
+            return Instance({
+                "sentence": sentence,
+                "label": labels,
+            })
+        else:
+            sentence = TextField([Token(word) for word in text],
+                                 self._token_indexers)
+            return Instance({
+                "sentence": sentence,
+            })
