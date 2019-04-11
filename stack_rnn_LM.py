@@ -1,6 +1,7 @@
 from allennlp.models import Model
 from allennlp.modules.text_field_embedders import BasicTextFieldEmbedder
-from allennlp.training.metrics import Average, BooleanAccuracy
+from allennlp.training.metrics import CategoricalAccuracy
+from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits
 import torch
 import torch.nn.functional as F
 
@@ -13,8 +14,9 @@ class StackRNNLanguageModel(Model):
     def __init__(self,
                  vocab,
                  num_embeddings=10000,
-                 embedding_dim=None,
+                 embedding_dim=50,
                  stack_dim=16,
+                 push_ones=True,
                  rnn_dim=650,
                  rnn_cell_type=torch.nn.LSTMCell):
 
@@ -27,6 +29,7 @@ class StackRNNLanguageModel(Model):
 
         self._stack_dim = stack_dim
         self._rnn_dim = rnn_dim
+        self._push_ones = push_ones
 
         if rnn_cell_type is not None:
             self._rnn_cell = rnn_cell_type(embedding_dim + stack_dim, rnn_dim)
@@ -41,12 +44,12 @@ class StackRNNLanguageModel(Model):
         self._control_layer = ControlLayer(rnn_dim, stack_dim, vision=4)
         self._classifier = torch.nn.Linear(rnn_dim, self._vocab_size)
 
-        self._accuracy = BooleanAccuracy()
-        self._pop_strength = Average()
+        self._accuracy = CategoricalAccuracy()
         self._criterion = torch.nn.CrossEntropyLoss()
         self.instruction_history = None
 
     def forward(self, sentence, label=None):
+        mask = get_text_field_mask(sentence)
         embedded = self._embedder(sentence)
         batch_size = embedded.size(0)
         sentence_length = embedded.size(1)
@@ -71,7 +74,8 @@ class StackRNNLanguageModel(Model):
                 raise NotImplementedError
 
             instructions = self._control_layer(h)
-            self._pop_strength(torch.mean(instructions.push_strengths - instructions.pop_strengths))
+            if self._push_ones:
+                instructions.push_strengths = torch.ones_like(instructions.push_strengths)
             stack_summary = stack(*instructions.make_tuple())
 
             h_all_words.append(h)
@@ -89,8 +93,8 @@ class StackRNNLanguageModel(Model):
         }
 
         if label is not None:
-            self._accuracy(predictions.reshape(-1), label.reshape(-1).float())
-            loss = self._criterion(logits.reshape(-1, self._vocab_size), label.reshape(-1))
+            self._accuracy(logits, label, mask)
+            loss = sequence_cross_entropy_with_logits(logits, label, mask)
             results["loss"] = loss
 
         return results
@@ -98,5 +102,4 @@ class StackRNNLanguageModel(Model):
     def get_metrics(self, reset):
         return {
             "accuracy": self._accuracy.get_metric(reset),
-            "push_pop_strength": self._pop_strength.get_metric(reset),
         }
