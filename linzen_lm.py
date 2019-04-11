@@ -15,6 +15,8 @@ def main():
     reader = LinzenLMDatasetReader()
     # download data from 
     # https://drive.google.com/file/d/1Yi2PThfLtlnFpN2oJu3dCYPDyv1CnGX8/view?usp=sharing
+    # command used to generate train/test split (for reference)
+    # `gawk 'BEGIN {srand()} {f = FILENAME (rand() <= 0.9 ? ".90" : ".10"); print > f}' agr_50_mostcommon_10K.tsv`
     train_dataset = reader.read("data/agr_50_mostcommon_10K.tsv.90")
     vocab = Vocabulary.from_instances(train_dataset)
     dataset_name = "linzen"
