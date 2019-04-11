@@ -35,16 +35,14 @@ class LinzenLMDatasetReader(DatasetReader):
   def _read(self, file_path):
     with open(file_path) as f:
       for line in f:
-        final_word = line[:3]
-        word_prefix = line[4:].strip().split(" ")
+        components = line.split("\t")
+        sentence = components[0].split(' ')
 
-        sentence = TextField([Token(word) for word in word_prefix], self.token_indexers)
+        sentence_field = TextField([Token(word) for word in sentence[:-1]], self.token_indexers)
 
-        label_list = [word for word in word_prefix[1:]]
-        label_list.append(final_word)
-        label = SequenceLabelField(label_list, sequence_field=sentence)
+        label = SequenceLabelField(sentence[1:], sequence_field=sentence_field)
 
         yield Instance({
-            "sentence": sentence,
-            "label": label,
-          })
+          "sentence": sentence_field,
+          "label": label
+        })

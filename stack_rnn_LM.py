@@ -13,7 +13,6 @@ class StackRNNLanguageModel(Model):
 
     def __init__(self,
                  vocab,
-                 num_embeddings=10000,
                  embedding_dim=50,
                  stack_dim=16,
                  push_ones=True,
@@ -22,9 +21,7 @@ class StackRNNLanguageModel(Model):
 
         super().__init__(vocab)
         self._vocab_size = vocab.get_vocab_size()
-        if embedding_dim is None:
-            embedding_dim = self._vocab_size
-        embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
+        embedding = torch.nn.Embedding(self._vocab_size, embedding_dim)
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
         self._stack_dim = stack_dim
