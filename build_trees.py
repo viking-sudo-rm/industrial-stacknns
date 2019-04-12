@@ -7,8 +7,17 @@ class InternalBinaryNode:
     self.left_tree = left_child
     self.right_tree = right_child
 
+  @staticmethod
+  def _child_to_str(child):
+    child_str = str(child)
+    if isinstance(child, str):
+      child_str = "[%s]" % child_str
+    return child_str
+
   def __str__(self):
-    return "[ %s %s ]" % (str(self.left_tree), str(self.right_tree))
+    """Export the tree in LaTeX forest format."""
+    return "[%s%s]" % (self._child_to_str(self.left_tree),
+                       self._child_to_str(self.right_tree))
 
 BinaryTree = Union[InternalBinaryNode, Text]
 
