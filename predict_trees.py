@@ -17,17 +17,17 @@ def predict(model, sentence, key="pop_strengths"):
 
 
 def main():
-    # sentence = "AT NN IN AT NNS VBD AT JJ NN"
-    sentence = "John and Jill told Mary that she was cool"
+    sentence = "AT NN IN AT NNS VBD AT JJ NN"
+    # sentence = "John and Jill told Mary that she was cool"
 
-    dataset_name = "linzen"
+    dataset_name = "brown"
     swap = True
 
     vocab = Vocabulary.from_files("saved_models/vocabulary-%s" % dataset_name)
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
                                   stack_dim=16,
-                                  # num_embeddings=10000,
+                                  num_embeddings=10000,
                                   swap_push_pop=True)
     suffix = "-swap" if swap else ""
     with open("saved_models/stack-%s%s.th" % (dataset_name, suffix), "rb") as fh:

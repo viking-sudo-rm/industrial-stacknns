@@ -34,9 +34,8 @@ class SimpleRNNLanguageModel(Model):
     def forward(self, sentence, label=None):
         mask = get_text_field_mask(sentence)
         embeddings = self._embedder(sentence)
-
         hidden_states, _ = self._rnn(embeddings)
-        logits = self._classifier(stacked_h)
+        logits = self._classifier(hidden_states)
         predictions = torch.argmax(logits, dim=2).float()
 
         results = {

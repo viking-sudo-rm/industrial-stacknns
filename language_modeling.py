@@ -9,6 +9,7 @@ import torch
 from data_readers.brown import BrownDatasetReader
 from data_readers.linzen import LinzenLMDatasetReader
 from stack_rnn_LM import StackRNNLanguageModel
+from simple_rnn_LM import SimpleRNNLanguageModel
 
 
 def main():
@@ -24,9 +25,9 @@ def main():
     # vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
     # dataset_name = "linzenlm"
 
-    model = StackRNNLanguageModel(vocab,
+    model = SimpleRNNLanguageModel(vocab,
                                   rnn_dim=100,
-                                  stack_dim=16,
+                                  # stack_dim=16,
                                   swap_push_pop=swap_push_pop)
 
     optimizer = torch.optim.Adam(model.parameters())
