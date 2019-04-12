@@ -19,7 +19,7 @@ def main():
       "StackNN/data/linzen/rnn_agr_simple/numpred.val")
   vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
 
-  # model = StackRNNAgreementPredictor(vocab, rnn_dim = 100, rnn_cell_type = torch.nn.GRUCell)
+  model = StackRNNAgreementPredictor(vocab, rnn_dim = 100, rnn_cell_type = torch.nn.GRUCell)
   model = SimpleRNNAgreementPredictor(
       vocab, rnn_dim=18, rnn_type=torch.nn.GRU)
 
