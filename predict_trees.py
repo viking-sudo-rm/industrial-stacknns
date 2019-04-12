@@ -6,11 +6,12 @@ from data_readers.brown import BrownDatasetReader
 from predictor import TreePredictor
 from stack_rnn_LM import StackRNNLanguageModel
 
-def predict(model, sentence):
+
+def predict(model, sentence, key="pop_strengths"):
     dataset_reader = BrownDatasetReader(labels=False)
     predictor = TreePredictor(model, dataset_reader)
     prediction = predictor.predict(sentence)
-    pop_strengths = prediction["pop_strengths"]
+    pop_strengths = prediction[key]
     pairs = list(zip(sentence.split(" "), pop_strengths))
     return greedy_parse(pairs)
 
@@ -19,12 +20,21 @@ def main():
     # sentence = "AT NN IN AT NNS VBD AT JJ NN"
     sentence = "John and Jill told Mary that she was cool"
 
-    vocab = Vocabulary.from_files("saved_models/vocabulary-linzen")
-    model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
-    with open("saved_models/stack-linzen.th", "rb") as fh:
+    dataset_name = "linzen"
+    swap = True
+
+    vocab = Vocabulary.from_files("saved_models/vocabulary-%s" % dataset_name)
+    model = StackRNNLanguageModel(vocab,
+                                  rnn_dim=100,
+                                  stack_dim=16,
+                                  # num_embeddings=10000,
+                                  swap_push_pop=True)
+    suffix = "-swap" if swap else ""
+    with open("saved_models/stack-%s%s.th" % (dataset_name, suffix), "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
-    print(predict(model, sentence))
+    key = "push_strengths" if swap else "pop_strengths"
+    print(predict(model, sentence, key=key))
 
 
 if __name__ == "__main__":
