@@ -16,6 +16,7 @@ def main():
     train_dataset = reader.read("data/brown.txt")
     vocab = Vocabulary.from_instances(train_dataset)
     dataset_name = "brown"
+    num_embeddings = None
     swap_push_pop = True
 
     # reader = LinzenLMDatasetReader()
@@ -46,7 +47,7 @@ def main():
     suffix = dataset_name + ("-swap" if swap_push_pop else "")
     with open("saved_models/stack-%s.th" % suffix, "wb") as fh:
         torch.save(model.state_dict(), fh)
-    vocab.save_to_files("saved_models/vocabulary-%s" % suffix)
+    vocab.save_to_files("saved_models/vocabulary-%s" % dataset_name)
 
 
 if __name__ == "__main__":
