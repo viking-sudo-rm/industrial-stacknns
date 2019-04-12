@@ -50,7 +50,7 @@ def main():
     if swap_push_pop:
       filename += "-swap"
 
-    with open("saved_models/stack-%s.th" % filename, "wb") as fh:
+    with open("saved_models/%s.th" % filename, "wb") as fh:
         torch.save(model.state_dict(), fh)
     vocab.save_to_files("saved_models/vocabulary-%s" % dataset_name)
 
