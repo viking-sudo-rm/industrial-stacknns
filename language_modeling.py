@@ -16,6 +16,7 @@ def main():
     train_dataset = reader.read("data/brown.txt")
     vocab = Vocabulary.from_instances(train_dataset)
     dataset_name = "brown"
+    swap_push_pop = True
 
     # reader = LinzenLMDatasetReader()
     # train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
@@ -23,7 +24,10 @@ def main():
     # vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
     # dataset_name = "linzenlm"
 
-    model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
+    model = StackRNNLanguageModel(vocab,
+                                  rnn_dim=100,
+                                  stack_dim=16,
+                                  swap_push_pop=swap_push_pop)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])
@@ -39,9 +43,10 @@ def main():
                      )
     trainer.train()
 
-    with open("saved_models/stack-%s.th" % dataset_name, "wb") as fh:
+    suffix = dataset_name + ("-swap" if swap_push_pop else "")
+    with open("saved_models/stack-%s.th" % suffix, "wb") as fh:
         torch.save(model.state_dict(), fh)
-    vocab.save_to_files("saved_models/vocabulary-%s" % dataset_name)
+    vocab.save_to_files("saved_models/vocabulary-%s" % suffix)
 
 
 if __name__ == "__main__":

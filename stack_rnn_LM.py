@@ -18,6 +18,7 @@ class StackRNNLanguageModel(Model):
                  push_ones=True,
                  rnn_dim=650,
                  num_embeddings=None,  # Backward compatibility.
+                 swap_push_pop=True,
                  rnn_cell_type=torch.nn.LSTMCell):
 
         super().__init__(vocab)
@@ -28,7 +29,9 @@ class StackRNNLanguageModel(Model):
 
         self._stack_dim = stack_dim
         self._rnn_dim = rnn_dim
+
         self._push_ones = push_ones
+        self._swap_push_pop = swap_push_pop
 
         if rnn_cell_type is not None:
             self._rnn_cell = rnn_cell_type(embedding_dim + stack_dim, rnn_dim)
@@ -76,6 +79,10 @@ class StackRNNLanguageModel(Model):
             instructions = self._control_layer(h)
             if self._push_ones:
                 instructions.push_strengths = torch.ones_like(instructions.push_strengths)
+            if self._swap_push_pop:
+                temp = instructions.push_strengths
+                instructions.push_strengths = instructions.pop_strengths
+                instructions.pop_strengths = temp
             stack_summary = stack(*instructions.make_tuple())
 
             stack_total_strengths.append(sum(stack._strengths))
