@@ -18,7 +18,7 @@ class StackRNNLanguageModel(Model):
                  push_ones=True,
                  rnn_dim=650,
                  num_embeddings=None,  # Backward compatibility.
-                 swap_push_pop=True,
+                 swap_push_pop=True,  # Backward compatibility.
                  rnn_cell_type=torch.nn.LSTMCell):
 
         super().__init__(vocab)
