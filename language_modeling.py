@@ -43,8 +43,13 @@ def main():
                      )
     trainer.train()
 
-    suffix = dataset_name + ("-swap" if swap_push_pop else "")
-    with open("saved_models/stack-%s.th" % suffix, "wb") as fh:
+    filename = dataset_name
+    if isinstance(model, StackRNNLanguageModel):
+      filename = "stack-" + filename
+    if swap_push_pop:
+      filename += "-swap"
+
+    with open("saved_models/stack-%s.th" % filename, "wb") as fh:
         torch.save(model.state_dict(), fh)
     vocab.save_to_files("saved_models/vocabulary-%s" % dataset_name)
 
