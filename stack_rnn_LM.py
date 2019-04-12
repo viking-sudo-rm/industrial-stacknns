@@ -17,11 +17,13 @@ class StackRNNLanguageModel(Model):
                  stack_dim=16,
                  push_ones=True,
                  rnn_dim=650,
+                 num_embeddings=None,  # Backward compatibility.
                  rnn_cell_type=torch.nn.LSTMCell):
 
         super().__init__(vocab)
         self._vocab_size = vocab.get_vocab_size()
-        embedding = torch.nn.Embedding(self._vocab_size, embedding_dim)
+        if num_embeddings is None: num_embeddings = self._vocab_size
+        embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
         self._stack_dim = stack_dim
@@ -57,6 +59,7 @@ class StackRNNLanguageModel(Model):
 
         h_all_words = []
         instructions_list = []
+        stack_total_strengths = []
 
         for t in range(sentence_length): # can't predict the next tag when you're at the last tag
             features = torch.cat([embedded[:, t], stack_summary], 1)
@@ -75,6 +78,7 @@ class StackRNNLanguageModel(Model):
                 instructions.push_strengths = torch.ones_like(instructions.push_strengths)
             stack_summary = stack(*instructions.make_tuple())
 
+            stack_total_strengths.append(sum(stack._strengths))
             h_all_words.append(h)
             instructions_list.append(instructions)
 
@@ -87,6 +91,7 @@ class StackRNNLanguageModel(Model):
         read_strengths = torch.stack([instr.read_strengths for instr in instructions_list], dim=-1)
         pop_dists = torch.stack([instr.pop_distributions for instr in instructions_list], dim=-2)
         read_dists = torch.stack([instr.read_distributions for instr in instructions_list], dim=-2)
+        stack_total_strengths = torch.stack(stack_total_strengths, dim=-1)
 
         results = {
             "predictions": predictions,
@@ -95,6 +100,7 @@ class StackRNNLanguageModel(Model):
             "pop_strengths": pop_strengths,
             "pop_dists": pop_dists,
             "read_dists": read_dists,
+            "stack_total_strengths": stack_total_strengths,
         }
 
         if label is not None:

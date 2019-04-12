@@ -1,9 +1,17 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from predict_trees import brown_predict
-
+import torch
 from pandas import DataFrame, concat
+
+from allennlp.data.vocabulary import Vocabulary
+
+from build_trees import greedy_parse
+from data_readers.brown import BrownDatasetReader
+from predictor import TreePredictor
+from stack_rnn_LM import StackRNNLanguageModel
+
+from build_trees import greedy_parse
 
 def mybar(ser1, lab1, ser2, lab2, cat_label, ax=None):
     y_label = "Probability"
@@ -91,11 +99,22 @@ def profile_sentence(results, sentence, fig, offset=0):
     firststyle(plots[0])
 
 def main():
-    sent = "AT NP NN JJ NN VB NN JJ NN VB"
-    res = brown_predict(sent)
-    print(res['pop_dists'][0])
+    sentence = "AT NN IN AT NNS VBD AT JJ NN"
+
+    vocab = Vocabulary.from_files("saved_models/vocabulary-brown")
+    model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16, num_embeddings=10000)
+    with open("saved_models/stack-brown.th", "rb") as fh:
+        model.load_state_dict(torch.load(fh))
+
+    dataset_reader = BrownDatasetReader(labels=False) # true?
+    predictor = TreePredictor(model, dataset_reader)
+    prediction = predictor.predict(sentence)
+
+    print(greedy_parse(list(zip(sentence.split(" "), prediction["pop_strengths"]))))
+    print(prediction['stack_total_strengths'])
+
     fig = plt.figure()
-    profile_sentence(res, sent.split(" "), fig)
+    profile_sentence(prediction, sentence.split(" "), fig)
     plt.show()
 
 if __name__ == "__main__":
