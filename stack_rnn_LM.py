@@ -4,6 +4,7 @@ from allennlp.training.metrics import CategoricalAccuracy
 from allennlp.nn.util import get_text_field_mask, sequence_cross_entropy_with_logits
 import torch
 import torch.nn.functional as F
+import numpy as np
 
 from StackNN.structs import Stack
 from StackNN.control_layer import ControlLayer
@@ -91,6 +92,18 @@ class StackRNNLanguageModel(Model):
 
         stacked_h = torch.stack(h_all_words, dim=1)
         logits = self._classifier(stacked_h)
+
+        # TODO: there must be a better way to do this?
+        final_logits_mask = np.zeros((mask.shape[0],))
+        for i in range(final_logits_mask.shape[0]):
+            # get index of the last 1 in the mask for this row
+            for j in reversed(range(mask.shape[1])):
+                if mask[i][j] == 1:
+                    final_logits_mask[i] = j
+                    break
+
+        final_logits = logits[np.arange(logits.shape[0]), final_logits_mask, :]
+
         predictions = torch.argmax(logits, dim=2).float()
 
         push_strengths = torch.stack([instr.push_strengths for instr in instructions_list], dim=-1)
@@ -108,6 +121,7 @@ class StackRNNLanguageModel(Model):
             "pop_dists": pop_dists,
             "read_dists": read_dists,
             "stack_total_strengths": stack_total_strengths,
+            "final_logits": final_logits
         }
 
         if label is not None:
