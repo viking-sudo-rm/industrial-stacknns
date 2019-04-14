@@ -36,10 +36,12 @@ class SimpleRNNLanguageModel(Model):
         embeddings = self._embedder(sentence)
         hidden_states, _ = self._rnn(embeddings)
         logits = self._classifier(hidden_states)
+        final_logits = logits[:,-1,:].squeeze()
         predictions = torch.argmax(logits, dim=2).float()
 
         results = {
             "predictions": predictions,
+            "final_logits": final_logits
         }
 
         if label is not None:

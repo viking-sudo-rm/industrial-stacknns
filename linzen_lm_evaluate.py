@@ -9,6 +9,7 @@ import torch
 from data_readers.brown import BrownDatasetReader
 from data_readers.linzen import LinzenLMDatasetReader
 from stack_rnn_LM import StackRNNLanguageModel
+from simple_rnn_LM import SimpleRNNLanguageModel
 from utils import utils
 import numpy as np
 from allennlp.nn.util import get_text_field_mask
@@ -19,13 +20,14 @@ def main():
     test_dataset = reader.read("data/agr_50_mostcommon_10K.tsv.10")
     vocab = Vocabulary.from_files("saved_models/vocabulary-linzen")
 
-    model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
-    model.load_state_dict(torch.load("saved_models/stack-linzen-swap.th"))
+    model = SimpleRNNLanguageModel(vocab, rnn_dim=100)#, stack_dim=16)
+    model.load_state_dict(torch.load("saved_models/lstm-linzen.th"))
 
     iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])
     iterator.index_with(vocab)
 
     inflect, _ = utils.gen_inflect_from_vocab()
+    # print(inflect)
 
     correct = total = 0
     for batch in iterator(test_dataset, num_epochs=1, shuffle=False):

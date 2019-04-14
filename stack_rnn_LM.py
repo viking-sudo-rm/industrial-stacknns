@@ -103,6 +103,7 @@ class StackRNNLanguageModel(Model):
                     break
 
         final_logits = logits[np.arange(logits.shape[0]), final_logits_mask, :]
+        # final_logits = logits[:,-1,:].squeeze()
 
         predictions = torch.argmax(logits, dim=2).float()
 
