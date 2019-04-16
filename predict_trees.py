@@ -40,4 +40,5 @@ def main(sentences):
 
 
 if __name__ == "__main__":
+    # Example usage: echo "what is your name , young one" | python3 predict_trees.py
     main(sys.stdin.readlines())
