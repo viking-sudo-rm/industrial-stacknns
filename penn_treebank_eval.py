@@ -8,6 +8,7 @@ import re
 
 from nltk.corpus import treebank
 from PYEVALB.scorer import Scorer
+from PYEVALB import parser
 
 pattern = r"\s+"
 
@@ -51,7 +52,7 @@ def make_gold_and_test_trees():
             our_oneline_parse = our_tree.to_evalb()
         except:
             print(our_tree)
-            our_oneline_parse = "(X %s)" % our_tree
+            our_oneline_parse = "(X (X %s))" % our_tree
         our_parses.write(our_oneline_parse+"\n")
 
         if ix==0:
@@ -68,6 +69,22 @@ def score_trees():
     test_path = "predictions/our_parses.tst"
     results_path = "predictions/results.txt"
     scorer.evalb(gold_path, test_path, results_path)
+
+    # gold = "(X (X (X (X Pierre) (X Vinken)) (X (X ,) (X (X (X (X 61) (X years)) (X old)) (X ,)))) (X (X (X will) (X (X join) (X (X (X the) (X board)) (X (X (X as) (X (X a) (X (X nonexecutive) (X director)))) (X (X Nov.) (X 29)))))) (X .)))"
+    # test = "(X (X (X (X (X Pierre) (X Vinken)) (X (X ,) (X (X (X (X 61) (X (X years) (X old))) (X ,)) (X will)))) (X (X join) (X (X the) (X board)))) (X (X as) (X (X (X a) (X (X nonexecutive) (X director))) (X (X Nov.) (X (X 29) (X .))))))"
+    
+    # with open("predictions/gold_parses.gld") as gold_file:
+    #     gold_lines = gold_file.readlines()
+    # with open("predictions/our_parses.tst") as our_file:
+    #     our_lines = our_file.readlines()
+
+    # for gold_line, our_line in zip(gold_lines, our_lines):
+    #     print("=" * 50)
+    #     print(gold_line)
+    #     print(our_line)
+    #     gold_tree = parser.create_from_bracket_string(gold_line)
+    #     our_tree = parser.create_from_bracket_string(our_line)
+    #     result = scorer.score_trees(gold_tree, our_tree)
 
 
 if __name__ == "__main__":

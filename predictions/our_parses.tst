@@ -1045,7 +1045,7 @@
 (X (X (X (X Last) (X October)) (X (X ,) (X (X (X the) (X company)) (X also)))) (X (X bought) (X (X (X (X a) (X (X wheel-loader) (X (X manufacturing) (X plant)))) (X (X in) (X (X Heidelberg) (X (X ,) (X (X (X West) (X Germany)) (X ,)))))) (X (X from) (X (X Dresser) (X .))))))
 (X (X (X Furukawa) (X (X said) (X (X the) (X purchase)))) (X (X of) (X (X (X (X (X the) (X French)) (X (X and) (X (X German) (X plants)))) (X together)) (X (X will) (X (X (X total) (X (X about) (X (X (X (X 40) (X billion)) (X yen)) (X (X -LRB-) (X $))))) (X (X 280) (X (X (X million) (X -RRB-)) (X .))))))))
 (X (X (X (X (X (X (X Structural) (X Dynamics)) (X Research)) (X Corp.)) (X (X ,) (X which))) (X (X makes) (X (X (X computer-aided) (X (X engineering) (X software))) (X (X ,) (X (X (X said) (X (X it) (X (X introduced) (X (X new) (X technology))))) (X (X in) (X (X (X mechanical) (X design)) (X automation)))))))) (X (X that) (X (X will) (X (X improve) (X (X (X (X mechanical) (X engineering)) (X productivity)) (X .))))))
-(X @)
+(X (X @))
 (X (X (X (X (X Money) (X Market)) (X Deposits-a)) (X 6.21)) (X %))
 (X (X (X a) (X (X -) (X (X (X (X Average) (X (X rate) (X (X paid) (X yesterday)))) (X (X by) (X (X (X 100) (X (X large) (X banks))) (X (X and) (X thrifts))))) (X (X in) (X (X (X the) (X 10)) (X (X largest) (X (X metropolitan) (X areas)))))))) (X (X as) (X (X compiled) (X (X by) (X (X (X (X Bank) (X Rate)) (X Monitor)) (X .))))))
 (X (X b) (X (X -) (X (X (X (X Current) (X annual)) (X yield)) (X .))))
