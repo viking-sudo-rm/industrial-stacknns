@@ -1,3 +1,5 @@
+import sys
+
 import torch
 from allennlp.data.vocabulary import Vocabulary
 
@@ -7,7 +9,7 @@ from predictor import TreePredictor
 from stack_rnn_LM import StackRNNLanguageModel
 
 
-def predict(model, sentence, key="pop_strengths"):
+def predict_tree(model, sentence, key="pop_strengths"):
     dataset_reader = BrownDatasetReader(labels=False)
     predictor = TreePredictor(model, dataset_reader)
     prediction = predictor.predict(sentence)
@@ -16,10 +18,7 @@ def predict(model, sentence, key="pop_strengths"):
     return greedy_parse(pairs)
 
 
-def main():
-    # sentence = "AT NNS CC AT NN VBD IN AT NN"
-    sentence = "How many Vikings are needed to conquer London?"
-
+def main(sentences):
     dataset_name = "linzen"
     swap = True
 
@@ -34,8 +33,12 @@ def main():
         model.load_state_dict(torch.load(fh))
 
     key = "push_strengths" if swap else "pop_strengths"
-    print(predict(model, sentence, key=key))
+    for sentence in sentences:
+        sentence = sentence.strip()
+        tree = predict_tree(model, sentence, key=key)
+        print(tree.to_evalb())
 
 
 if __name__ == "__main__":
-    main()
+    # Example usage: echo "what is your name , young one" | python3 predict_trees.py
+    main(sys.stdin.readlines())

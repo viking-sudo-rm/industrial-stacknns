@@ -8,16 +8,28 @@ class InternalBinaryNode:
     self.right_tree = right_child
 
   @staticmethod
-  def _child_to_str(child):
-    child_str = str(child)
-    if isinstance(child, str):
-      child_str = "[%s]" % child_str
-    return child_str
+  def _child_to_latex(child):
+    if isinstance(child, InternalBinaryNode):
+      return child.to_latex()
+    else:
+      return "[%s]" % str(child)
 
-  def __str__(self):
+  def to_latex(self):
     """Export the tree in LaTeX forest format."""
-    return "[%s%s]" % (self._child_to_str(self.left_tree),
-                       self._child_to_str(self.right_tree))
+    return "[%s%s]" % (self._child_to_latex(self.left_tree),
+                       self._child_to_latex(self.right_tree))
+
+  @staticmethod
+  def _child_to_evalb(child):
+    if isinstance(child, InternalBinaryNode):
+      return child.to_evalb()
+    else:
+      return "(X %s)" % str(child)
+
+  def to_evalb(self):
+    """Export the tree to PARSE EVAL format."""
+    return "(X %s %s)" % (self._child_to_evalb(self.left_tree),
+                          self._child_to_evalb(self.right_tree))
 
 BinaryTree = Union[InternalBinaryNode, Text]
 
