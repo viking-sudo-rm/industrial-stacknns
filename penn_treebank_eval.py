@@ -6,9 +6,11 @@ from stack_rnn_LM import StackRNNLanguageModel
 import torch
 import re
 
+from nltk.corpus import treebank
+from PYEVALB.scorer import Scorer
+
 pattern = r"\s+"
 
-from nltk.corpus import treebank
 
 def clean_nones(t): #nltk_tree
     for ind, leaf in reversed(list(enumerate(t.leaves()))):
@@ -18,10 +20,10 @@ def clean_nones(t): #nltk_tree
             while parentpos and len(t[parentpos]) == 1:
                 postn = parentpos
                 parentpos = postn[:-1]
-            print(t[postn], "will be deleted")
+            # print(t[postn], "will be deleted")
             del t[postn]
 
-def main():
+def make_gold_and_test_trees():
     vocab = Vocabulary.from_files("saved_models/vocabulary-linzen")
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
@@ -31,10 +33,11 @@ def main():
     with open("saved_models/stack-linzen-swap.th", "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
-    gold_parses = open("predictions/gold_parses.txt", "w")
-    our_parses = open("predictions/our_parses.txt", "w")
+    gold_parses = open("predictions/gold_parses.gld", "w")
+    our_parses = open("predictions/our_parses.tst", "w")
 
     for ix, parsed_sent in enumerate(treebank.parsed_sents()):
+        clean_nones(parsed_sent)
         parsed_sent.chomsky_normal_form()
         for subtree in parsed_sent.subtrees():
             subtree.set_label("X")
@@ -59,6 +62,14 @@ def main():
     our_parses.close()
 
 
+def score_trees():
+    scorer = Scorer()
+    gold_path = "predictions/gold_parses.gld"
+    test_path = "predictions/our_parses.tst"
+    results_path = "predictions/results.txt"
+    scorer.evalb(gold_path, test_path, results_path)
+
 
 if __name__ == "__main__":
-    main()
+    # make_gold_and_test_trees()
+    score_trees()
