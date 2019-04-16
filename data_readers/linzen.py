@@ -44,5 +44,6 @@ class LinzenLMDatasetReader(DatasetReader):
 
         yield Instance({
           "sentence": sentence_field,
+          "pos": components[2].split(' '),
           "label": label
         })
