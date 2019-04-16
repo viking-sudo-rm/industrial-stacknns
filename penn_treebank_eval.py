@@ -65,9 +65,9 @@ def make_gold_and_test_trees():
 
 def score_trees():
     scorer = Scorer()
-    gold_path = "predictions/gold_parses.gld"
-    test_path = "predictions/our_parses.tst"
-    results_path = "predictions/results.txt"
+    gold_path = "predictions/wsj-nltk/parses.gld"
+    test_path = "predictions/wsj-nltk/parses.tst"
+    results_path = "predictions/wsj-nltk/results.txt"
     scorer.evalb(gold_path, test_path, results_path)
 
     # gold = "(X (X (X (X Pierre) (X Vinken)) (X (X ,) (X (X (X (X 61) (X years)) (X old)) (X ,)))) (X (X (X will) (X (X join) (X (X (X the) (X board)) (X (X (X as) (X (X a) (X (X nonexecutive) (X director)))) (X (X Nov.) (X 29)))))) (X .)))"
