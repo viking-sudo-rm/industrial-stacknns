@@ -45,16 +45,16 @@ class LinzenLMDatasetReader(DatasetReader):
         if self.test_mode:
           # only give it sentences up to the verb (exclusive)
           sentence_field = TextField([Token(word) for word in sentence[:verb_idx]], self.token_indexers)
+          label = SequenceLabelField(sentence[1:verb_idx+1], sequence_field=sentence_field)
         else:
           # give it the full sentences (for training)
           sentence_field = TextField([Token(word) for word in sentence[:-1]], self.token_indexers)
-
-        if self.test_mode:
-          label = LabelField(sentence[verb_idx], label_namespace="tokens")
-        else:
           label = SequenceLabelField(sentence[1:], sequence_field=sentence_field)
+
+        grammatical_verb = LabelField(sentence[verb_idx])
 
         yield Instance({
           "sentence": sentence_field,
-          "label": label
+          "label": label,
+          "grammatical_verb": grammatical_verb
         })
