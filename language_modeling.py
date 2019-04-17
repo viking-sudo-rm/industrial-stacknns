@@ -8,16 +8,21 @@ import torch
 
 from data_readers.brown import BrownDatasetReader
 from data_readers.linzen import LinzenLMDatasetReader
+from data_readers.wsj import WSJDatasetReader
 from stack_rnn_LM import StackRNNLanguageModel
 from simple_rnn_LM import SimpleRNNLanguageModel
 
 
 def main():
-    reader = BrownDatasetReader()
-    train_dataset = reader.read("data/brown.txt")
+    # reader = BrownDatasetReader()
+    # train_dataset = reader.read("data/brown.txt")
+    # vocab = Vocabulary.from_instances(train_dataset)
+    # dataset_name = "brown"
+
+    reader = WSJDatasetReader()
+    train_dataset = reader.read("data/treebank_3/raw/wsj")
     vocab = Vocabulary.from_instances(train_dataset)
-    dataset_name = "brown"
-    swap_push_pop = False
+    dataset_name = "wsj"
 
     # reader = LinzenLMDatasetReader()
     # train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
@@ -25,13 +30,16 @@ def main():
     # vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
     # dataset_name = "linzenlm"
 
-    model = SimpleRNNLanguageModel(vocab,
+    swap_push_pop = True
+
+    model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
                                   # stack_dim=16,
                                   swap_push_pop=swap_push_pop)
 
     optimizer = torch.optim.Adam(model.parameters())
-    iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])
+    iterator = BucketIterator(batch_size=16,
+                              sorting_keys=[("sentence", "num_tokens")])
     iterator.index_with(vocab)
 
     trainer = Trainer(model=model,

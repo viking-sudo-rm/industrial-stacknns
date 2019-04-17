@@ -21,20 +21,21 @@ def main():
     vocab = Vocabulary.from_instances(train_dataset)
     dataset_name = "linzen"
 
-    model = StackRNNLanguageModel(vocab, rnn_dim=100, stack_dim=16)
+    model = StackRNNLanguageModel(vocab,
+                                  rnn_dim=100,
+                                  stack_dim=16,
+                                  swap_push_pop=False)
 
     optimizer = torch.optim.Adam(model.parameters())
-    iterator = BucketIterator(batch_size=16, sorting_keys=[("sentence", "num_tokens")])
+    iterator = BucketIterator(batch_size=16,
+                              sorting_keys=[("sentence", "num_tokens")])
     iterator.index_with(vocab)
 
     trainer = Trainer(model=model,
                       optimizer=optimizer,
                       iterator=iterator,
                       train_dataset=train_dataset,
-                      num_epochs=5
-                      # validation_dataset=validation_dataset,
-                      # patience=5
-                     )
+                      num_epochs=5)
     trainer.train()
 
     with open("saved_models/stack-%s.th" % dataset_name, "wb") as fh:

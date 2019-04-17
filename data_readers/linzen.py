@@ -1,4 +1,3 @@
-from allennlp.data.vocabulary import Vocabulary
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data.dataset_readers import DatasetReader
 from allennlp.data import Instance
@@ -28,22 +27,25 @@ class LinzenLMDatasetReader(DatasetReader):
 
   """Dataset reader for Linzen as a language modeling task."""
 
-  def __init__(self):
+  def __init__(self, include_pos=False):
     super().__init__(lazy=False)
+    self._include_pos = include_pos
     self.token_indexers = {"tokens": SingleIdTokenIndexer()}
 
   def _read(self, file_path):
-    with open(file_path) as f:
+    with open(file_path, encoding="utf8") as f:
       for line in f:
         components = line.split("\t")
         sentence = components[0].split(' ')
 
-        sentence_field = TextField([Token(word) for word in sentence[:-1]], self.token_indexers)
-
+        sentence_field = TextField([Token(word) for word in sentence[:-1]],
+                                   self.token_indexers)
         label = SequenceLabelField(sentence[1:], sequence_field=sentence_field)
 
-        yield Instance({
+        fields = {
           "sentence": sentence_field,
-          "pos": components[2].split(' '),
-          "label": label
-        })
+          "label": label,
+        }
+        if self._include_pos:
+          fields["pos"] = components[2].split(' ')
+        yield Instance(fields)
