@@ -1,4 +1,5 @@
-import sys
+import argparse
+import logging
 
 import torch
 from allennlp.data.vocabulary import Vocabulary
@@ -14,31 +15,44 @@ def predict_tree(model, sentence, key="pop_strengths"):
     predictor = TreePredictor(model, dataset_reader)
     prediction = predictor.predict(sentence)
     pop_strengths = prediction[key]
+    if all(dist == 1 for dist in pop_strengths):
+        logging.warning("All syntactic distances are 1. Is there a mismatch?")
     pairs = list(zip(sentence.split(" "), pop_strengths))
     return greedy_parse(pairs)
 
 
-def main(sentences):
-    dataset_name = "linzen"
-    swap = True
+def main(sentence, dataset_name, swap, num_embeddings):
+    """Parse an arbitrary sentence with a pretrained model.
 
+    Example usage from the command line:
+    python3 predict_trees.py "AT NNS VBD AT JJ JJ NN" --dataset brown --no_swap
+    """
     vocab = Vocabulary.from_files("saved_models/vocabulary-%s" % dataset_name)
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
                                   stack_dim=16,
-                                  # num_embeddings=10000,
-                                  swap_push_pop=True)
-    suffix = "-swap" if swap else ""
-    with open("saved_models/stack-%s%s.th" % (dataset_name, suffix), "rb") as fh:
+                                  num_embeddings=num_embeddings,
+                                  swap_push_pop=swap)
+    dataset_name += "-swap" if swap else ""
+    with open("saved_models/stack-%s.th" % dataset_name, "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
     key = "push_strengths" if swap else "pop_strengths"
-    for sentence in sentences:
-        sentence = sentence.strip()
-        tree = predict_tree(model, sentence, key=key)
-        print(tree.to_evalb())
+    tree = predict_tree(model, sentence, key=key)
+    print(tree.to_evalb())
 
 
 if __name__ == "__main__":
-    # Example usage: echo "what is your name , young one" | python3 predict_trees.py
-    main(sys.stdin.readlines())
+    parser = argparse.ArgumentParser()
+    parser.add_argument("sentence", type=str)
+    parser.add_argument("--dataset",
+                        choices=["brown", "linzen"],
+                        default="linzen")
+    parser.add_argument("--num_embeddings", type=int, default=None)
+    parser.add_argument("--no_swap", action="store_true")
+    args = parser.parse_args()
+
+    main(args.sentence,
+         args.dataset,
+         not args.no_swap,
+         args.num_embeddings)

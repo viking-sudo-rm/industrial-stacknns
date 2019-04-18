@@ -23,7 +23,7 @@ def clean_nones(t):
             del t[postn]
 
 
-def make_gold_and_test_trees(corpus, path, max_len=None):
+def make_gold_and_test_trees(corpus, path, max_len=None, key="push_strengths"):
     vocab = Vocabulary.from_files("saved_models/vocabulary-linzen")
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
@@ -49,7 +49,7 @@ def make_gold_and_test_trees(corpus, path, max_len=None):
         gold_parses.write(gold_oneline_parse + "\n")
 
         tokens = " ".join(tok for tok in parsed_sent.flatten())
-        our_tree = predict_tree(model, tokens, key="push_strengths")
+        our_tree = predict_tree(model, tokens, key=key)
         try:
             our_oneline_parse = our_tree.to_evalb()
         except Exception:
@@ -76,11 +76,13 @@ def score_trees(path):
 if __name__ == "__main__":
     # The part of the corpus included in NLTK.
     # make_gold_and_test_trees(treebank, "predictions/wsj-nltk")
+    # path = "predictions/wsj-nltk"
 
     # The standard section for evaluation: WSJ23.
     # corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
     # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
     # print("Files:", corpus.fileids())
+    # path = "predictions/wsj-23"
     # make_gold_and_test_trees(corpus, path)
 
     # The whole corpus with length < 10.

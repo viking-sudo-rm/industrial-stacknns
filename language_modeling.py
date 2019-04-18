@@ -14,15 +14,15 @@ from simple_rnn_LM import SimpleRNNLanguageModel
 
 
 def main():
-    # reader = BrownDatasetReader()
-    # train_dataset = reader.read("data/brown.txt")
-    # vocab = Vocabulary.from_instances(train_dataset)
-    # dataset_name = "brown"
-
-    reader = WSJDatasetReader()
-    train_dataset = reader.read("data/treebank_3/raw/wsj")
+    reader = BrownDatasetReader()
+    train_dataset = reader.read("data/brown.txt")
     vocab = Vocabulary.from_instances(train_dataset)
-    dataset_name = "wsj"
+    dataset_name = "brown"
+
+    # reader = WSJDatasetReader()
+    # train_dataset = reader.read("data/treebank_3/raw/wsj")
+    # vocab = Vocabulary.from_instances(train_dataset)
+    # dataset_name = "wsj"
 
     # reader = LinzenLMDatasetReader()
     # train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
@@ -30,7 +30,7 @@ def main():
     # vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
     # dataset_name = "linzenlm"
 
-    swap_push_pop = True
+    swap_push_pop = False
 
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
