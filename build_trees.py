@@ -3,21 +3,27 @@ from typing import List, Text, Tuple, Union
 
 class InternalBinaryNode:
 
-  def __init__(self, left_child, right_child):
+  def __init__(self, left_child, right_child, label=None):
     self.left_tree = left_child
     self.right_tree = right_child
+    self.label = label
 
   @staticmethod
-  def _child_to_latex(child):
+  def _child_to_latex(child, labels=False):
     if isinstance(child, InternalBinaryNode):
-      return child.to_latex()
+      return child.to_latex(labels=labels)
     else:
       return "[%s]" % str(child)
 
-  def to_latex(self):
+  def to_latex(self, labels=False):
     """Export the tree in LaTeX forest format."""
-    return "[%s%s]" % (self._child_to_latex(self.left_tree),
-                       self._child_to_latex(self.right_tree))
+    if labels:
+      return "[%s %s%s]" % (self.label,
+                            self._child_to_latex(self.left_tree, True),
+                            self._child_to_latex(self.right_tree, True))
+    else:
+      return "[%s%s]" % (self._child_to_latex(self.left_tree),
+                         self._child_to_latex(self.right_tree))
 
   @staticmethod
   def _child_to_evalb(child):
@@ -30,6 +36,7 @@ class InternalBinaryNode:
     """Export the tree to PARSE EVAL format."""
     return "(X %s %s)" % (self._child_to_evalb(self.left_tree),
                           self._child_to_evalb(self.right_tree))
+
 
 BinaryTree = Union[InternalBinaryNode, Text]
 
@@ -64,9 +71,10 @@ def greedy_parse(scored_tokens: List[Tuple[Text, float]]) -> BinaryTree:
       if max_idx != len(scored_tokens) - 1 else None
 
   if specifier is None:
-    return InternalBinaryNode(head, complement)
+    return InternalBinaryNode(head, complement, label="XP")
   elif complement is None:
-    return InternalBinaryNode(specifier, head)
+    return InternalBinaryNode(specifier, head, label="XP")
   else:
     return InternalBinaryNode(specifier,
-                              InternalBinaryNode(head, complement))
+                              InternalBinaryNode(head, complement, label="X'"),
+                              label="XP")
