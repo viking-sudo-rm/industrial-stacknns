@@ -4,7 +4,6 @@ from allennlp.data import Instance
 from allennlp.data.fields import TextField, LabelField, SequenceLabelField
 from allennlp.data.tokenizers import Token
 
-
 class LinzenDatasetReader(DatasetReader):
 
   def __init__(self, append_null=True):
@@ -27,20 +26,32 @@ class LinzenLMDatasetReader(DatasetReader):
 
   """Dataset reader for Linzen as a language modeling task."""
 
-  def __init__(self, include_pos=False):
+  def __init__(self, test_mode=False, include_pos=False):
     super().__init__(lazy=False)
     self._include_pos = include_pos
     self.token_indexers = {"tokens": SingleIdTokenIndexer()}
+    self.test_mode = test_mode
 
   def _read(self, file_path):
     with open(file_path, encoding="utf8") as f:
       for line in f:
         components = line.split("\t")
         sentence = components[0].split(' ')
+        verb_idx = int(components[10])
+        sentence_field = None
+        label = None
 
-        sentence_field = TextField([Token(word) for word in sentence[:-1]],
-                                   self.token_indexers)
-        label = SequenceLabelField(sentence[1:], sequence_field=sentence_field)
+        if self.test_mode:
+          # only give it sentences up to the verb (exclusive)
+          sentence_field = TextField([Token(word) for word in sentence[:verb_idx]], self.token_indexers)
+        else:
+          # give it the full sentences (for training)
+          sentence_field = TextField([Token(word) for word in sentence[:-1]], self.token_indexers)
+
+        if self.test_mode:
+          label = LabelField(sentence[verb_idx])
+        else:
+          label = SequenceLabelField(sentence[1:], sequence_field=sentence_field)
 
         fields = {
           "sentence": sentence_field,
