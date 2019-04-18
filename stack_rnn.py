@@ -12,14 +12,17 @@ class StackRNNAgreementPredictor(Model):
 
   def __init__(self,
                vocab,
-               num_embeddings=10000,
+               num_embeddings=None, # Backwards compatibility.
                embedding_dim=50,
                rnn_dim=650,
                stack_dim=16,
                rnn_cell_type=torch.nn.LSTMCell,
-               push_rnn_state=False):
+               push_rnn_state=False,
+               swap_push_pop=True, # Backward compatibility.
+               push_ones=True):
 
     super().__init__(vocab)
+    num_embeddings = vocab.get_vocab_size()
     embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
     self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
@@ -37,6 +40,9 @@ class StackRNNAgreementPredictor(Model):
     self._accuracy = BooleanAccuracy()
     self._pop_strength = Average()
     self._criterion = torch.nn.BCEWithLogitsLoss()
+
+    self._push_ones = push_ones
+    self._swap_push_pop = swap_push_pop
 
   def forward(self, sentence, label=None):
     embedded = self._embedder(sentence)
@@ -60,8 +66,14 @@ class StackRNNAgreementPredictor(Model):
 
       # Can push either stack vectors or hidden state onto the stack.
       instructions = self._control_layer(h)
-      self._pop_strength(torch.mean(
-          instructions.push_strengths - instructions.pop_strengths))
+      if self._push_ones:
+        instructions.push_strengths = torch.ones_like(instructions.push_strengths)
+      if self._swap_push_pop:
+        temp = instructions.push_strengths
+        instructions.push_strengths = instructions.pop_strengths
+        instructions.pop_strengths = temp
+      # self._pop_strength(torch.mean(
+          # instructions.push_strengths - instructions.pop_strengths))
       if self._push_rnn_state:
         instructions.push_vectors = h
       stack_summary = stack(*instructions.make_tuple())
@@ -90,5 +102,4 @@ class StackRNNAgreementPredictor(Model):
   def get_metrics(self, reset=False):
     return {
         "accuracy": self._accuracy.get_metric(reset)
-        # "push_pop_strength": self._pop_strength.get_metric(reset),
     }
