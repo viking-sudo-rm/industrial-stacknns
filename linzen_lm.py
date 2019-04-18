@@ -20,11 +20,12 @@ def main():
     train_dataset = reader.read("data/agr_50_mostcommon_10K.tsv.90")
     vocab = Vocabulary.from_instances(train_dataset)
     dataset_name = "linzen"
+    swap = False
 
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
                                   stack_dim=16,
-                                  swap_push_pop=False)
+                                  swap_push_pop=swap)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16,
@@ -38,9 +39,10 @@ def main():
                       num_epochs=5)
     trainer.train()
 
+    vocab.save_to_files("saved_models/vocabulary-%s" % dataset_name)
+    dataset_name += "-swap" if swap else ""
     with open("saved_models/stack-%s.th" % dataset_name, "wb") as fh:
         torch.save(model.state_dict(), fh)
-    vocab.save_to_files("saved_models/vocabulary-%s" % dataset_name)
 
 
 if __name__ == "__main__":

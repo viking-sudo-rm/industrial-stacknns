@@ -39,10 +39,11 @@ def make_gold_and_test_trees(corpus, path, max_len=None, key="push_strengths"):
     for ix, parsed_sent in enumerate(corpus.parsed_sents()):
         clean_nones(parsed_sent)
         parsed_sent.chomsky_normal_form()
+        parsed_sent.collapse_unary(collapsePOS=True)
         for subtree in parsed_sent.subtrees():
             subtree.set_label("X")
 
-        if max_len is not None and len(parsed_sent.flatten()) >= max_len:
+        if max_len is not None and len(parsed_sent.flatten()) > max_len:
             continue
 
         gold_oneline_parse = re.sub(pattern, " ", str(parsed_sent))
@@ -53,6 +54,8 @@ def make_gold_and_test_trees(corpus, path, max_len=None, key="push_strengths"):
         try:
             our_oneline_parse = our_tree.to_evalb()
         except Exception:
+            # In the one-word cases (very few), we just assign the standard
+            # parse to avoid throwing errors.
             print(our_tree)
             our_oneline_parse = "(X (X %s))" % our_tree
         our_parses.write(our_oneline_parse + "\n")
@@ -79,17 +82,17 @@ if __name__ == "__main__":
     # path = "predictions/wsj-nltk"
 
     # The standard section for evaluation: WSJ23.
-    # corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
-    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    # print("Files:", corpus.fileids())
-    # path = "predictions/wsj-23"
-    # make_gold_and_test_trees(corpus, path)
+    corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
+    corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
+    print("Files:", corpus.fileids())
+    path = "predictions/wsj-23"
+    make_gold_and_test_trees(corpus, path)
 
     # The whole corpus with length < 10.
-    corpus_root = "data/treebank_3/parsed/mrg/wsj"
-    corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    path = "predictions/wsj-10"
-    make_gold_and_test_trees(corpus, path, max_len=10)
+    # corpus_root = "data/treebank_3/parsed/mrg/wsj"
+    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
+    # path = "predictions/wsj-10"
+    # make_gold_and_test_trees(corpus, path, max_len=10)
 
     # Do the actual scoring.
     score_trees(path)
