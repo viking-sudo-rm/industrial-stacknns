@@ -6,6 +6,7 @@ from allennlp.data.vocabulary import Vocabulary
 
 from build_trees import greedy_parse, InternalBinaryNode
 from data_readers.brown import BrownDatasetReader
+from data_readers.linzen import LinzenLMDatasetReader
 from predictor import TreePredictor
 from stack_rnn_LM import StackRNNLanguageModel
 

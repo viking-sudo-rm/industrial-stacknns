@@ -60,3 +60,8 @@ class LinzenLMDatasetReader(DatasetReader):
         if self._include_pos:
           fields["pos"] = components[2].split(' ')
         yield Instance(fields)
+
+  def text_to_instance(self, text):
+      """Compatibility with predict_tree function."""
+      sentence_field = TextField([Token(word) for word in text], self.token_indexers)
+      return Instance({"sentence": sentence_field})
