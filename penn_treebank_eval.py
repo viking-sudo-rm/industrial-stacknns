@@ -16,7 +16,9 @@ def clean_nones(t):
     for ind, leaf in reversed(list(enumerate(t.leaves()))):
         postn = t.leaf_treeposition(ind)
         parentpos = postn[:-1]
-        if leaf.startswith("*") or t[parentpos].label() == u'-NONE-':
+        if leaf.startswith("*") or \
+           t[parentpos].label() == u'-NONE-' or \
+           t[parentpos].label() == u".":
             while parentpos and len(t[parentpos]) == 1:
                 postn = parentpos
                 parentpos = postn[:-1]
@@ -100,8 +102,8 @@ if __name__ == "__main__":
     # The whole corpus with length < 10.
     corpus_root = "data/treebank_3/parsed/mrg/wsj"
     corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    path = "predictions/wsj-10-noswap"
-    make_gold_and_test_trees(corpus, path, max_len=10, key="pop_strengths", swap=False)
+    path = "predictions/wsj-10"
+    make_gold_and_test_trees(corpus, path, max_len=10)
 
     # Do the actual scoring.
     score_trees(path)
