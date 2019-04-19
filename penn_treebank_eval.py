@@ -35,7 +35,8 @@ def make_gold_and_test_trees(corpus,
                                   stack_dim=16,
                                   # num_embeddings=10000,
                                   swap_push_pop=swap)
-    with open("saved_models/stack-linzen-swap.th", "rb") as fh:
+    model_name = "linzen-swap" if swap else "linzen"
+    with open("saved_models/stack-%s.th" % model_name, "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
     gold_parses = open(os.path.join(path, "parses.gld"), "w")
@@ -93,14 +94,14 @@ if __name__ == "__main__":
     # corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
     # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
     # print("Files:", corpus.fileids())
-    # path = "predictions/wsj-23"
-    # make_gold_and_test_trees(corpus, path)
+    # path = "predictions/wsj-23-noswap"
+    # make_gold_and_test_trees(corpus, path, key="pop_strengths", swap=False)
 
     # The whole corpus with length < 10.
     corpus_root = "data/treebank_3/parsed/mrg/wsj"
     corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    path = "predictions/wsj-10"
-    make_gold_and_test_trees(corpus, path, max_len=10)
+    path = "predictions/wsj-10-noswap"
+    make_gold_and_test_trees(corpus, path, max_len=10, key="pop_strengths", swap=False)
 
     # Do the actual scoring.
     score_trees(path)
