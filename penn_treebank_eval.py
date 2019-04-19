@@ -9,21 +9,29 @@ from nltk.corpus import BracketParseCorpusReader, treebank
 from PYEVALB.scorer import Scorer
 
 pattern = r"\s+"
-_PUNCTUATION = {".", ",", ";", "``", "--", "''", ":", "-"}
+_PUNCTUATION = {".", ",", ";", "``", "--", "''", ":", "-", "(", ")"}
 
 
-def clean_nones(t):
+def clean_nones(t, ignore_periods=False):
     for ind, leaf in reversed(list(enumerate(t.leaves()))):
         postn = t.leaf_treeposition(ind)
         parentpos = postn[:-1]
         if leaf.startswith("*") or \
            t[parentpos].label() == u'-NONE-' or \
-           t[parentpos].label() == u".":
+           (ignore_periods and leaf == u"."):
             while parentpos and len(t[parentpos]) == 1:
                 postn = parentpos
                 parentpos = postn[:-1]
-            # print(t[postn], "will be deleted")
             del t[postn]
+
+
+def gen_words(tree):
+    for pos, leaf in enumerate(tree.leaves()):
+        parent_pos = tree.leaf_treeposition(pos)[:-1]
+        parent = tree[parent_pos]
+        if leaf in _PUNCTUATION or parent.label() in _PUNCTUATION:
+            continue
+        yield leaf
 
 
 def make_gold_and_test_trees(corpus,
@@ -46,6 +54,11 @@ def make_gold_and_test_trees(corpus,
 
     for ix, parsed_sent in enumerate(corpus.parsed_sents()):
         clean_nones(parsed_sent)
+
+        if max_len is not None and sum(1 for word in
+                                       gen_words(parsed_sent)) > max_len:
+            continue
+
         parsed_sent.chomsky_normal_form()
         parsed_sent.collapse_unary(collapsePOS=True)
         for subtree in parsed_sent.subtrees():
@@ -53,9 +66,9 @@ def make_gold_and_test_trees(corpus,
         start_pos = parsed_sent.leaf_treeposition(0)
         parsed_sent[start_pos] = parsed_sent[start_pos].lower()
 
-        if max_len is not None and sum(1 for c in parsed_sent.flatten()
-                                       if c not in _PUNCTUATION) > max_len:
-            continue
+        # if max_len is not None and sum(1 for c in parsed_sent.flatten()
+        #                                if c not in _PUNCTUATION) > max_len:
+        #     continue
 
         gold_oneline_parse = re.sub(pattern, " ", str(parsed_sent))
         gold_parses.write(gold_oneline_parse + "\n")
@@ -93,17 +106,17 @@ if __name__ == "__main__":
     # path = "predictions/wsj-nltk"
 
     # The standard section for evaluation: WSJ23.
-    # corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
-    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    # print("Files:", corpus.fileids())
-    # path = "predictions/wsj-23-noswap"
-    # make_gold_and_test_trees(corpus, path, key="pop_strengths", swap=False)
-
-    # The whole corpus with length < 10.
-    corpus_root = "data/treebank_3/parsed/mrg/wsj"
+    corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
     corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    path = "predictions/wsj-10"
-    make_gold_and_test_trees(corpus, path, max_len=10)
+    print("Files:", corpus.fileids())
+    path = "predictions/wsj-23"
+    make_gold_and_test_trees(corpus, path)
+
+    # The whole corpus with length <= 10.
+    # corpus_root = "data/treebank_3/parsed/mrg/wsj"
+    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
+    # path = "predictions/wsj-10-naive"
+    # make_gold_and_test_trees(corpus, path, max_len=10, key="pop_strengths")
 
     # Do the actual scoring.
     score_trees(path)
