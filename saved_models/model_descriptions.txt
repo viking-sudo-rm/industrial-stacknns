@@ -1,0 +1,20 @@
+stack-linzen.th
+    language model, swap=False
+
+
+stack-linzen-swap
+    language model, swap = True
+
+
+stack-linzen-class
+    classifier, swap = ?
+    IGNORE THIS ONE, USE ONE OF THE NEXT THREE
+
+stack-linzen-class-nopushpop
+    classifier, push_ones=False
+
+stack-linzen-class-pop
+    classifier, swap=True
+
+stack-linzen-class-push
+    classifier, swap=False

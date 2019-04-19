@@ -22,7 +22,8 @@ class StackRNNAgreementPredictor(Model):
                push_ones=True):
 
     super().__init__(vocab)
-    num_embeddings = vocab.get_vocab_size()
+    self._vocab_size = vocab.get_vocab_size()
+    if num_embeddings is None: num_embeddings = self._vocab_size
     embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
     self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
@@ -55,6 +56,7 @@ class StackRNNAgreementPredictor(Model):
     stack_summary = torch.zeros([batch_size, self._stack_dim])
 
     instructions_list = []
+    stack_total_strengths = []
 
     for t in range(sentence_length):
       features = torch.cat([embedded[:, t], stack_summary], 1)
@@ -78,14 +80,28 @@ class StackRNNAgreementPredictor(Model):
         instructions.push_vectors = h
       stack_summary = stack(*instructions.make_tuple())
 
+      stack_total_strengths.append(sum(stack._strengths))
       instructions_list.append(instructions)
 
     logits = torch.squeeze(self._classifier(h))
     prediction = (logits > 0.).float()
 
+    push_strengths = torch.stack([instr.push_strengths for instr in instructions_list], dim=-1)
+    pop_strengths = torch.stack([instr.pop_strengths for instr in instructions_list], dim=-1)
+    read_strengths = torch.stack([instr.read_strengths for instr in instructions_list], dim=-1)
+    pop_dists = torch.stack([instr.pop_distributions for instr in instructions_list], dim=-2)
+    read_dists = torch.stack([instr.read_distributions for instr in instructions_list], dim=-2)
+    stack_total_strengths = torch.stack(stack_total_strengths, dim=-1)
+
     results = {
         "prediction": prediction,
         "instructions": instructions_list,
+        "push_strengths": push_strengths,
+        "read_strengths": read_strengths,
+        "pop_strengths": pop_strengths,
+        "pop_dists": pop_dists,
+        "read_dists": read_dists,
+        "stack_total_strengths": stack_total_strengths,
     }
 
     if label is not None:

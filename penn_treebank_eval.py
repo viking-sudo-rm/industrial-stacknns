@@ -53,13 +53,13 @@ def make_gold_and_test_trees(corpus,
     our_parses = open(os.path.join(path, "parses.tst"), "w")
 
     for ix, parsed_sent in enumerate(corpus.parsed_sents()):
-        clean_nones(parsed_sent)
+        clean_nones(parsed_sent, ignore_periods=True)
 
         if max_len is not None and sum(1 for word in
                                        gen_words(parsed_sent)) > max_len:
             continue
 
-        parsed_sent.chomsky_normal_form()
+        #parsed_sent.chomsky_normal_form()
         parsed_sent.collapse_unary(collapsePOS=True)
         for subtree in parsed_sent.subtrees():
             subtree.set_label("X")
@@ -91,14 +91,12 @@ def make_gold_and_test_trees(corpus,
     gold_parses.close()
     our_parses.close()
 
-
 def score_trees(path):
     scorer = Scorer()
     gold_path = os.path.join(path, "parses.gld")
     test_path = os.path.join(path, "parses.tst")
     results_path = os.path.join(path, "results.txt")
     scorer.evalb(gold_path, test_path, results_path)
-
 
 if __name__ == "__main__":
     # The part of the corpus included in NLTK.
@@ -109,8 +107,8 @@ if __name__ == "__main__":
     corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
     corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
     print("Files:", corpus.fileids())
-    path = "predictions/wsj-23"
-    make_gold_and_test_trees(corpus, path)
+    path = "predictions/wsj-23-naive"
+    make_gold_and_test_trees(corpus, path, key="pop_strengths")
 
     # The whole corpus with length <= 10.
     # corpus_root = "data/treebank_3/parsed/mrg/wsj"
