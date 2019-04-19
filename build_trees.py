@@ -13,16 +13,16 @@ class InternalBinaryNode:
     if isinstance(child, InternalBinaryNode):
       return child.to_latex(labels=labels)
     else:
-      return "[%s]" % str(child)
+      return "%s" % str(child)
 
   def to_latex(self, labels=False):
     """Export the tree in LaTeX forest format."""
     if labels:
-      return "[%s %s %s]" % (self.label,
+      return "[.%s %s %s ]" % (self.label,
                             self._child_to_latex(self.left_tree, True),
                             self._child_to_latex(self.right_tree, True))
     else:
-      return "[%s %s]" % (self._child_to_latex(self.left_tree),
+      return "[ %s %s ]" % (self._child_to_latex(self.left_tree),
                          self._child_to_latex(self.right_tree))
 
   @staticmethod

@@ -9,6 +9,7 @@ from nltk.corpus import BracketParseCorpusReader, treebank
 from PYEVALB.scorer import Scorer
 
 pattern = r"\s+"
+_PUNCTUATION = {".", ",", ";", "``", "--", "''", ":", "-"}
 
 
 def clean_nones(t):
@@ -23,13 +24,17 @@ def clean_nones(t):
             del t[postn]
 
 
-def make_gold_and_test_trees(corpus, path, max_len=None, key="push_strengths"):
+def make_gold_and_test_trees(corpus,
+                             path,
+                             max_len=None,
+                             key="push_strengths",
+                             swap=True):
     vocab = Vocabulary.from_files("saved_models/vocabulary-linzen")
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
                                   stack_dim=16,
                                   # num_embeddings=10000,
-                                  swap_push_pop=True)
+                                  swap_push_pop=swap)
     with open("saved_models/stack-linzen-swap.th", "rb") as fh:
         model.load_state_dict(torch.load(fh))
 
@@ -42,8 +47,11 @@ def make_gold_and_test_trees(corpus, path, max_len=None, key="push_strengths"):
         parsed_sent.collapse_unary(collapsePOS=True)
         for subtree in parsed_sent.subtrees():
             subtree.set_label("X")
+        start_pos = parsed_sent.leaf_treeposition(0)
+        parsed_sent[start_pos] = parsed_sent[start_pos].lower()
 
-        if max_len is not None and len(parsed_sent.flatten()) > max_len:
+        if max_len is not None and sum(1 for c in parsed_sent.flatten()
+                                       if c not in _PUNCTUATION) > max_len:
             continue
 
         gold_oneline_parse = re.sub(pattern, " ", str(parsed_sent))
@@ -82,17 +90,17 @@ if __name__ == "__main__":
     # path = "predictions/wsj-nltk"
 
     # The standard section for evaluation: WSJ23.
-    corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
-    corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    print("Files:", corpus.fileids())
-    path = "predictions/wsj-23"
-    make_gold_and_test_trees(corpus, path)
+    # corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
+    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
+    # print("Files:", corpus.fileids())
+    # path = "predictions/wsj-23"
+    # make_gold_and_test_trees(corpus, path)
 
     # The whole corpus with length < 10.
-    # corpus_root = "data/treebank_3/parsed/mrg/wsj"
-    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    # path = "predictions/wsj-10"
-    # make_gold_and_test_trees(corpus, path, max_len=10)
+    corpus_root = "data/treebank_3/parsed/mrg/wsj"
+    corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
+    path = "predictions/wsj-10"
+    make_gold_and_test_trees(corpus, path, max_len=10)
 
     # Do the actual scoring.
     score_trees(path)

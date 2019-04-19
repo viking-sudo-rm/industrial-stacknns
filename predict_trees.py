@@ -4,10 +4,16 @@ import logging
 import torch
 from allennlp.data.vocabulary import Vocabulary
 
-from build_trees import greedy_parse
+from build_trees import greedy_parse, InternalBinaryNode
 from data_readers.brown import BrownDatasetReader
 from predictor import TreePredictor
 from stack_rnn_LM import StackRNNLanguageModel
+
+
+TREE_ENCODINGS = {
+    "evalb": InternalBinaryNode.to_evalb,
+    "latex": InternalBinaryNode.to_latex,
+}
 
 
 def predict_tree(model, sentence, key="pop_strengths"):
@@ -21,7 +27,7 @@ def predict_tree(model, sentence, key="pop_strengths"):
     return greedy_parse(pairs)
 
 
-def main(sentence, dataset_name, swap, num_embeddings):
+def main(sentence, dataset_name, swap, num_embeddings, encoding_fn):
     """Parse an arbitrary sentence with a pretrained model.
 
     Example usage from the command line:
@@ -39,7 +45,7 @@ def main(sentence, dataset_name, swap, num_embeddings):
 
     key = "push_strengths" if swap else "pop_strengths"
     tree = predict_tree(model, sentence, key=key)
-    print(tree.to_evalb())
+    print(encoding_fn(tree))
 
 
 if __name__ == "__main__":
@@ -50,9 +56,13 @@ if __name__ == "__main__":
                         default="linzen")
     parser.add_argument("--num_embeddings", type=int, default=None)
     parser.add_argument("--no_swap", action="store_true")
+    parser.add_argument("--enc",
+                        choices=["evalb", "latex"],
+                        default="latex")
     args = parser.parse_args()
 
     main(args.sentence,
          args.dataset,
          not args.no_swap,
-         args.num_embeddings)
+         args.num_embeddings,
+         TREE_ENCODINGS[args.enc])
