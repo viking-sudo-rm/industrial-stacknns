@@ -5,6 +5,7 @@ import torch
 import os
 import re
 
+from nltk.tree import Tree
 from nltk.corpus import BracketParseCorpusReader, treebank
 from PYEVALB.scorer import Scorer
 
@@ -85,8 +86,8 @@ def make_gold_and_test_trees(corpus,
         our_parses.write(our_oneline_parse + "\n")
 
         if ix == 0:
-            print(gold_oneline_parse)
-            print(our_oneline_parse)
+            Tree.fromstring(gold_oneline_parse).pretty_print()
+            Tree.fromstring(our_oneline_parse).pretty_print()
 
     gold_parses.close()
     our_parses.close()
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
     print("Files:", corpus.fileids())
     path = "predictions/wsj-23-naive"
-    make_gold_and_test_trees(corpus, path, key="pop_strengths")
+    make_gold_and_test_trees(corpus, path, key="pop_strengths", swap=True)
 
     # The whole corpus with length <= 10.
     # corpus_root = "data/treebank_3/parsed/mrg/wsj"
