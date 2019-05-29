@@ -32,23 +32,30 @@ def main():
 
     swap_push_pop = True
 
+    # if torch.cuda.is_available():
+    #     logging.info("Found and using CUDA.")
+    #     device = 0
+    # else:
+    #     logging.info("No CUDA found.")
+    #     device = -1
+
+    # For some reason, this code runs MUCH slower on the GPU.
+    device = -1
+
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
                                   # stack_dim=16,
-                                  swap_push_pop=swap_push_pop)
+                                  swap_push_pop=swap_push_pop,
+                                  device=device)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16,
                               sorting_keys=[("sentence", "num_tokens")])
     iterator.index_with(vocab)
 
-    # if torch.cuda.is_available():
-    #     logging.info("Found and using CUDA.")
-    #     cuda_device = 0
-    #     model.cuda(cuda_device)
-    # else:
-    #     cuda_device = -1
-    cuda_device = -1
+    if device == 0:
+        # Best practice to call this after constructing optimizer.
+        model.cuda(device)
 
     trainer = Trainer(model=model,
                       optimizer=optimizer,
@@ -57,7 +64,7 @@ def main():
                       num_epochs=5,
                       # validation_dataset=validation_dataset,
                       # patience=5
-                      cuda_device=cuda_device)
+                      cuda_device=device)
     trainer.train()
 
     filename = dataset_name

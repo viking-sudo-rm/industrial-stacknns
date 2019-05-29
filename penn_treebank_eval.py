@@ -121,20 +121,19 @@ if __name__ == "__main__":
     # The standard section for evaluation: WSJ23.
     corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
     corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    print("Files:", corpus.fileids())
     path = "predictions/%s/wsj-23" % model_name
     max_len = None
 
     # The whole corpus with length <= 10.
-    corpus_root = "data/treebank_3/parsed/mrg/wsj"
-    corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    path = "predictions/%s/wsj-10" % model_name
-    max_len = 10
+    # corpus_root = "data/treebank_3/parsed/mrg/wsj"
+    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
+    # path = "predictions/%s/wsj-10" % model_name
+    # max_len = 10
 
     key = "push_strengths"
     # path += "-naive"
 
-    os.mirs(path)
+    os.makedirs(path)
     make_gold_and_test_trees(model,
                              corpus,
                              path,

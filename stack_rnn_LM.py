@@ -135,3 +135,7 @@ class StackRNNLanguageModel(Model):
         return {
             "accuracy": self._accuracy.get_metric(reset),
         }
+
+    def set_device(self, device):
+        """Call this before starting training."""
+        self._device = device
