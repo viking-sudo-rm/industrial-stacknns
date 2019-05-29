@@ -20,7 +20,7 @@ class StackRNNLanguageModel(Model):
                  num_embeddings=None,  # Backward compatibility.
                  swap_push_pop=True,  # Backward compatibility.
                  rnn_cell_type=torch.nn.LSTMCell,
-                 cuda=False):
+                 device=None):
 
         super().__init__(vocab)
         self._vocab_size = vocab.get_vocab_size()
@@ -35,7 +35,7 @@ class StackRNNLanguageModel(Model):
         self._push_ones = push_ones
         self._swap_push_pop = swap_push_pop
 
-        self._cuda = cuda
+        self._device = device
 
         if rnn_cell_type is not None:
             self._rnn_cell = rnn_cell_type(embedding_dim + stack_dim, rnn_dim)
@@ -48,7 +48,7 @@ class StackRNNLanguageModel(Model):
                 torch.nn.ReLU())
 
         self._control_layer = ControlLayer(rnn_dim, stack_dim, vision=4,
-                                           cuda=cuda)
+                                           device=self._device)
         self._classifier = torch.nn.Linear(rnn_dim, self._vocab_size)
 
         self._accuracy = CategoricalAccuracy()
@@ -61,16 +61,11 @@ class StackRNNLanguageModel(Model):
         batch_size = embedded.size(0)
         sentence_length = embedded.size(1)
 
-        h = torch.zeros([batch_size, self._rnn_dim])
-        c = torch.zeros([batch_size, self._rnn_dim])
-        stack = Stack(batch_size, self._stack_dim)
-        stack_summary = torch.zeros([batch_size, self._stack_dim])
-
-        if self._cuda:
-            embedded = embedded.cuda()
-            h = h.cuda()
-            c = c.cuda()
-            stack_summary = stack_summary.cuda()
+        h = torch.zeros([batch_size, self._rnn_dim], device=self._device)
+        c = torch.zeros([batch_size, self._rnn_dim], device=self._device)
+        stack = Stack(batch_size, self._stack_dim, device=self._device)
+        stack_summary = torch.zeros([batch_size, self._stack_dim],
+                                    device=self._device)
 
         h_all_words = []
         instructions_list = []
@@ -90,9 +85,8 @@ class StackRNNLanguageModel(Model):
 
             instructions = self._control_layer(h)
             if self._push_ones:
-                push_strengths = torch.ones_like(instructions.push_strengths)
-                if self._cuda:
-                    push_strengths = push_strengths.cuda()
+                push_strengths = torch.ones_like(instructions.push_strengths,
+                                                 device=self._device)
                 instructions.push_strengths = push_strengths
             if self._swap_push_pop:
                 temp = instructions.push_strengths
