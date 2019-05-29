@@ -1,6 +1,8 @@
 from overrides import overrides
 import os
 
+from nltk.tokenize import word_tokenize
+
 from allennlp.data.token_indexers import SingleIdTokenIndexer
 from allennlp.data.dataset_readers import DatasetReader
 from allennlp.data import Instance
@@ -30,7 +32,10 @@ class WSJDatasetReader(DatasetReader):
                         line = line.strip()
                         if not line or line == ".START":
                             continue
-                        yield self.text_to_instance(line.split(" "))
+                        text = word_tokenize(line)
+                        if len(text) < 2:
+                            continue
+                        yield self.text_to_instance(text)
 
     @overrides
     def text_to_instance(self, text):

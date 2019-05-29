@@ -14,15 +14,15 @@ from simple_rnn_LM import SimpleRNNLanguageModel
 
 
 def main():
-    reader = BrownDatasetReader()
-    train_dataset = reader.read("data/brown.txt")
-    vocab = Vocabulary.from_instances(train_dataset)
-    dataset_name = "brown"
-
-    # reader = WSJDatasetReader()
-    # train_dataset = reader.read("data/treebank_3/raw/wsj")
+    # reader = BrownDatasetReader()
+    # train_dataset = reader.read("data/brown.txt")
     # vocab = Vocabulary.from_instances(train_dataset)
-    # dataset_name = "wsj"
+    # dataset_name = "brown"
+
+    reader = WSJDatasetReader(max_num=5000)
+    train_dataset = reader.read("data/treebank_3/raw/wsj")
+    vocab = Vocabulary.from_instances(train_dataset)
+    dataset_name = "wsj"
 
     # reader = LinzenLMDatasetReader()
     # train_dataset = reader.read("StackNN/data/linzen/rnn_agr_simple/numpred.train")
@@ -30,7 +30,7 @@ def main():
     # vocab = Vocabulary.from_instances(train_dataset + validation_dataset)
     # dataset_name = "linzenlm"
 
-    swap_push_pop = False
+    swap_push_pop = True
 
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
@@ -42,21 +42,29 @@ def main():
                               sorting_keys=[("sentence", "num_tokens")])
     iterator.index_with(vocab)
 
+    # if torch.cuda.is_available():
+    #     logging.info("Found and using CUDA.")
+    #     cuda_device = 0
+    #     model.cuda(cuda_device)
+    # else:
+    #     cuda_device = -1
+    cuda_device = -1
+
     trainer = Trainer(model=model,
                       optimizer=optimizer,
                       iterator=iterator,
                       train_dataset=train_dataset,
-                      num_epochs=5
+                      num_epochs=5,
                       # validation_dataset=validation_dataset,
                       # patience=5
-                     )
+                      cuda_device=cuda_device)
     trainer.train()
 
     filename = dataset_name
     if isinstance(model, StackRNNLanguageModel):
-      filename = "stack-" + filename
+        filename = "stack-" + filename
     if swap_push_pop:
-      filename += "-swap"
+        filename += "-swap"
 
     with open("saved_models/%s.th" % filename, "wb") as fh:
         torch.save(model.state_dict(), fh)

@@ -19,11 +19,13 @@ class StackRNNLanguageModel(Model):
                  rnn_dim=650,
                  num_embeddings=None,  # Backward compatibility.
                  swap_push_pop=True,  # Backward compatibility.
-                 rnn_cell_type=torch.nn.LSTMCell):
+                 rnn_cell_type=torch.nn.LSTMCell,
+                 cuda=False):
 
         super().__init__(vocab)
         self._vocab_size = vocab.get_vocab_size()
-        if num_embeddings is None: num_embeddings = self._vocab_size
+        if num_embeddings is None:
+            num_embeddings = self._vocab_size
         embedding = torch.nn.Embedding(num_embeddings, embedding_dim)
         self._embedder = BasicTextFieldEmbedder({"tokens": embedding})
 
@@ -33,17 +35,20 @@ class StackRNNLanguageModel(Model):
         self._push_ones = push_ones
         self._swap_push_pop = swap_push_pop
 
+        self._cuda = cuda
+
         if rnn_cell_type is not None:
             self._rnn_cell = rnn_cell_type(embedding_dim + stack_dim, rnn_dim)
         else:
             self._rnn_cell = None
             self.feedforward = torch.nn.Sequential(
-                                            torch.nn.Linear(embedding_dim + rnn_dim, rnn_dim),
-                                            torch.nn.ReLU(),
-                                            torch.nn.Linear(rnn_dim, rnn_dim),
-                                            torch.nn.ReLU())
+                torch.nn.Linear(embedding_dim + rnn_dim, rnn_dim),
+                torch.nn.ReLU(),
+                torch.nn.Linear(rnn_dim, rnn_dim),
+                torch.nn.ReLU())
 
-        self._control_layer = ControlLayer(rnn_dim, stack_dim, vision=4)
+        self._control_layer = ControlLayer(rnn_dim, stack_dim, vision=4,
+                                           cuda=cuda)
         self._classifier = torch.nn.Linear(rnn_dim, self._vocab_size)
 
         self._accuracy = CategoricalAccuracy()
@@ -56,15 +61,22 @@ class StackRNNLanguageModel(Model):
         batch_size = embedded.size(0)
         sentence_length = embedded.size(1)
 
-        h, c = torch.zeros([batch_size, self._rnn_dim]), torch.zeros([batch_size, self._rnn_dim])
+        h = torch.zeros([batch_size, self._rnn_dim])
+        c = torch.zeros([batch_size, self._rnn_dim])
         stack = Stack(batch_size, self._stack_dim)
         stack_summary = torch.zeros([batch_size, self._stack_dim])
+
+        if self._cuda:
+            embedded = embedded.cuda()
+            h = h.cuda()
+            c = c.cuda()
+            stack_summary = stack_summary.cuda()
 
         h_all_words = []
         instructions_list = []
         stack_total_strengths = []
 
-        for t in range(sentence_length): # can't predict the next tag when you're at the last tag
+        for t in range(sentence_length):
             features = torch.cat([embedded[:, t], stack_summary], 1)
 
             if isinstance(self._rnn_cell, torch.nn.LSTMCell):
@@ -78,7 +90,10 @@ class StackRNNLanguageModel(Model):
 
             instructions = self._control_layer(h)
             if self._push_ones:
-                instructions.push_strengths = torch.ones_like(instructions.push_strengths)
+                push_strengths = torch.ones_like(instructions.push_strengths)
+                if self._cuda:
+                    push_strengths = push_strengths.cuda()
+                instructions.push_strengths = push_strengths
             if self._swap_push_pop:
                 temp = instructions.push_strengths
                 instructions.push_strengths = instructions.pop_strengths
@@ -93,11 +108,16 @@ class StackRNNLanguageModel(Model):
         logits = self._classifier(stacked_h)
         predictions = torch.argmax(logits, dim=2).float()
 
-        push_strengths = torch.stack([instr.push_strengths for instr in instructions_list], dim=-1)
-        pop_strengths = torch.stack([instr.pop_strengths for instr in instructions_list], dim=-1)
-        read_strengths = torch.stack([instr.read_strengths for instr in instructions_list], dim=-1)
-        pop_dists = torch.stack([instr.pop_distributions for instr in instructions_list], dim=-2)
-        read_dists = torch.stack([instr.read_distributions for instr in instructions_list], dim=-2)
+        push_strengths = torch.stack([instr.push_strengths for instr in
+                                      instructions_list], dim=-1)
+        pop_strengths = torch.stack([instr.pop_strengths for instr in
+                                     instructions_list], dim=-1)
+        read_strengths = torch.stack([instr.read_strengths for instr in
+                                      instructions_list], dim=-1)
+        pop_dists = torch.stack([instr.pop_distributions for instr in
+                                 instructions_list], dim=-2)
+        read_dists = torch.stack([instr.read_distributions for instr in
+                                  instructions_list], dim=-2)
         stack_total_strengths = torch.stack(stack_total_strengths, dim=-1)
 
         results = {
