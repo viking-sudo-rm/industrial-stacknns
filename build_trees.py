@@ -4,8 +4,8 @@ from typing import List, Text, Tuple, Union
 class InternalBinaryNode:
 
   def __init__(self, left_child, right_child, label=None):
-    self.left_tree = left_child
-    self.right_tree = right_child
+    self.left_child = left_child
+    self.right_child = right_child
     self.label = label
 
   @staticmethod
@@ -19,23 +19,32 @@ class InternalBinaryNode:
     """Export the tree in LaTeX forest format."""
     if labels:
       return "[.%s %s %s ]" % (self.label,
-                            self._child_to_latex(self.left_tree, True),
-                            self._child_to_latex(self.right_tree, True))
+                               self._child_to_latex(self.left_child, True),
+                               self._child_to_latex(self.right_child, True))
     else:
-      return "[ %s %s ]" % (self._child_to_latex(self.left_tree),
-                         self._child_to_latex(self.right_tree))
+      return "[ %s %s ]" % (self._child_to_latex(self.left_child),
+                            self._child_to_latex(self.right_child))
 
   @staticmethod
   def _child_to_evalb(child):
     if isinstance(child, InternalBinaryNode):
       return child.to_evalb()
     else:
-      return "(X %s)" % str(child)
+      return "(P %s)" % str(child)
 
   def to_evalb(self):
     """Export the tree to PARSE EVAL format."""
-    return "(X %s %s)" % (self._child_to_evalb(self.left_tree),
-                          self._child_to_evalb(self.right_tree))
+    return "(X %s %s)" % (self._child_to_evalb(self.left_child),
+                          self._child_to_evalb(self.right_child))
+
+  @classmethod
+  def to_nested_lists(cls, tree):
+    """Exported this tree to unlabelled nested lists of children."""
+    if isinstance(tree, cls):
+      return [cls.to_nested_lists(tree.left_child),
+              cls.to_nested_lists(tree.right_child)]
+    else:
+      return tree
 
 
 BinaryTree = Union[InternalBinaryNode, Text]
@@ -44,7 +53,8 @@ BinaryTree = Union[InternalBinaryNode, Text]
 def greedy_parse(scored_tokens: List[Tuple[Text, float]]) -> BinaryTree:
   """This function greedily splits a tree by splitting at the greatest distances.
 
-  To be more precise, this sentence splits recursively at the greatest distance and builds a constituent:
+  To be more precise, this sentence splits recursively at the greatest distance
+  and builds a constituent:
 
     ((x_<i), (x_i, (x_>i))).
 
