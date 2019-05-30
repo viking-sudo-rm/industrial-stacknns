@@ -53,7 +53,7 @@ def make_gold_and_test_trees(model,
             continue
 
         # Here are some modifications that can be made to the trees.
-        clean_nones(parsed_sent, ignore_periods=False)
+        clean_nones(parsed_sent, ignore_periods=True)
         # parsed_sent.chomsky_normal_form()
         # parsed_sent.collapse_unary(collapsePOS=True)
 
@@ -95,16 +95,19 @@ def score_trees(path):
 
 
 if __name__ == "__main__":
+    """Pick which model to load."""
+
     # Load the trained Linzen model.
-    # model_name = "linzen"
-    # vocabulary_path = "saved_models/vocabulary-linzen"
-    # decapitalize_first_word = True
+    model_name = "linzen"
+    vocab_path = "saved_models/vocabulary-linzen"
+    decapitalize_first_word = True
 
     # Load the trained WSJ model.
-    model_name = "wsj"
-    vocab_path = "saved_models/vocabulary-wsj"
-    decapitalize_first_word = False
+    # model_name = "wsj"
+    # vocab_path = "saved_models/vocabulary-wsj"
+    # decapitalize_first_word = False
 
+    # Decide whether to swap or not.
     swap = True
     if swap:
         model_name += "-swap"
@@ -133,7 +136,9 @@ if __name__ == "__main__":
     key = "push_strengths"
     # path += "-naive"
 
-    os.makedirs(path)
+    if not os.path.exists(path):
+        os.makedirs(path)
+
     make_gold_and_test_trees(model,
                              corpus,
                              path,
@@ -143,3 +148,5 @@ if __name__ == "__main__":
 
     # Do the actual scoring.
     score_trees(path)
+
+    print("Saved under %s" % path)

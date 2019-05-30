@@ -44,9 +44,9 @@ def main():
 
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
-                                  # stack_dim=16,
+                                  stack_dim=16,
                                   swap_push_pop=swap_push_pop,
-                                  device=device)
+                                  device=None if device == -1 else device)
 
     optimizer = torch.optim.Adam(model.parameters())
     iterator = BucketIterator(batch_size=16,
