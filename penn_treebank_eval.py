@@ -69,9 +69,6 @@ def gen_gold_and_test_trees(model,
         # gold_parse.chomsky_normal_form()
         # gold_parse.collapse_unary(collapsePOS=True)
 
-        for subtree in gold_parse.subtrees():
-            subtree.set_label("X")
-
         if decapitalize_first_word:
             start_pos = gold_parse.leaf_treeposition(0)
             gold_parse[start_pos] = gold_parse[start_pos].lower()
@@ -173,8 +170,6 @@ if __name__ == "__main__":
         "ignore_periods": False,
         "mock_right_branching": True,
     }
-
-    # Decide whether to swap or not.
     if swap:
         model_name += "-swap"
         kwargs["key"] = "push_strengths"
