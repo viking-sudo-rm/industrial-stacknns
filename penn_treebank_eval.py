@@ -47,14 +47,14 @@ def get_tree_without_periods(tree):
         return [left_child, right_child]
 
 
-def gen_gold_and_test_trees(model,
-                            gold_parses,
-                            max_len=None,
-                            key="push_strengths",
-                            swap=True,
-                            decapitalize_first_word=True,
-                            mock_right_branching=False,
-                            remove_periods=False):
+def gen_tree_pairs(model,
+                   gold_parses,
+                   max_len=None,
+                   key="push_strengths",
+                   swap=True,
+                   decapitalize_first_word=True,
+                   mock_right_branching=False,
+                   remove_periods=False):
     for ix, gold_parse in enumerate(gold_parses):
 
         if decapitalize_first_word:
@@ -169,41 +169,37 @@ def gen_htut_nested_lists(filename):
 
 
 if __name__ == "__main__":
-    # Load the trained Linzen model.
+    # Specify, model, architectural parameters, and parsing options.
     model_name = "linzen"
-    vocab_path = "saved_models/vocabulary-linzen"
     swap = True
     kwargs = {
-        "mock_right_branching": True,
+        "mock_right_branching": False,
         "decapitalize_first_word": True,
         "remove_periods": False,
     }
+
+    # Paths and parsing options depend on whether we use push or pop strength.
+    vocab_path = "saved_models/vocabulary-%s" % model_name
     if swap:
-        model_name += "-swap"
+        model_path = "saved_models/stack-%s-swap.th" % model_name
         kwargs["key"] = "push_strengths"
     else:
+        model_path = "saved_models/stack-%s.th" % model_name
         kwargs["key"] = "pop_strength"
 
+    # Load the vocabulary and model.
     vocab = Vocabulary.from_files(vocab_path)
     model = StackRNNLanguageModel(vocab,
                                   rnn_dim=100,
                                   stack_dim=16,
                                   # num_embeddings=10000,
                                   swap_push_pop=swap)
-    with open("saved_models/stack-%s.th" % model_name, "rb") as fh:
+    with open(model_path, "rb") as fh:
         model.load_state_dict(torch.load(fh))
-
-    # The standard section for evaluation: WSJ23.
-    # corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
-    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    # trees = corpus.parsed_sents()
-    # kwargs["max_len"] = None  # Deprecated.
 
     # Htut et al.'s binarized version of the WSJ23 corpus.
     trees = gen_htut_nested_lists("data/ptb_sec23.jsonl")
 
-    tree_pairs = gen_gold_and_test_trees(model,
-                                         trees,
-                                         **kwargs)
-
+    # Generate and evaluate predicted trees.
+    tree_pairs = gen_tree_pairs(model, trees, **kwargs)
     eval_trees(tree_pairs)
