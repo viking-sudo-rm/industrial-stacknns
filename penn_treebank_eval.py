@@ -2,41 +2,16 @@ from predict_trees import predict_tree
 from allennlp.data.vocabulary import Vocabulary
 from stack_rnn_LM import StackRNNLanguageModel
 import torch
+import json
 import numpy as np
 
 from nltk.tree import Tree
-from nltk.corpus import BracketParseCorpusReader
+# from nltk.corpus import BracketParseCorpusReader
 # from PYEVALB.scorer import Scorer
 
 from build_trees import InternalBinaryNode
 
-pattern = r"\s+"
 _PUNCTUATION = {".", ",", ";", "``", "--", "''", ":", "-", "(", ")"}
-
-
-def remove_nulls(t, ignore_periods=False):
-    for ind, leaf in reversed(list(enumerate(t.leaves()))):
-        postn = t.leaf_treeposition(ind)
-        parentpos = postn[:-1]
-
-        # Remove null elements.
-        if leaf.startswith("*") or \
-           t[parentpos].label() == u'-NONE-' or \
-           (ignore_periods and leaf == u"."):
-            while parentpos and len(t[parentpos]) == 1:
-                postn = parentpos
-                parentpos = postn[:-1]
-            del t[postn]
-
-
-def gen_words(tree):
-    """Returns words, but not in correct order."""
-    for pos, leaf in tree.leaves():
-        parent_pos = tree.leaf_treeposition(pos)[:-1]
-        parent = tree[parent_pos]
-        if leaf in _PUNCTUATION or parent.label() in _PUNCTUATION:
-            continue
-        yield leaf
 
 
 def gen_sentence(tree):
@@ -48,53 +23,61 @@ def gen_sentence(tree):
             yield from gen_sentence(child)
 
 
+def find_and_decapitalize_first_word(tree):
+    if isinstance(tree, str):
+        return True
+    else:
+        if find_and_decapitalize_first_word(tree[0]):
+            tree[0] = tree[0].lower()
+        return False
+
+
+def get_tree_without_periods(tree):
+    if isinstance(tree, str):
+        return None if tree == "." else tree
+
+    left_child = get_tree_without_periods(tree[0])
+    right_child = get_tree_without_periods(tree[1])
+
+    if left_child is None:
+        return right_child
+    if right_child is None:
+        return left_child
+    else:
+        return [left_child, right_child]
+
+
 def gen_gold_and_test_trees(model,
-                            corpus,
-                            path,
+                            gold_parses,
                             max_len=None,
                             key="push_strengths",
                             swap=True,
                             decapitalize_first_word=True,
-                            ignore_periods=True,
-                            mock_right_branching=False):
-    for ix, gold_parse in enumerate(corpus.parsed_sents()):
-
-        # Ignore long sentences (> max_len).
-        if max_len is not None and sum(1 for word in
-                                       gen_words(gold_parse)) > max_len:
-            continue
-
-        # Here are some modifications that can be made to the trees.
-        remove_nulls(gold_parse, ignore_periods=ignore_periods)
-        # gold_parse.chomsky_normal_form()
-        # gold_parse.collapse_unary(collapsePOS=True)
+                            mock_right_branching=False,
+                            remove_periods=False):
+    for ix, gold_parse in enumerate(gold_parses):
 
         if decapitalize_first_word:
-            start_pos = gold_parse.leaf_treeposition(0)
-            gold_parse[start_pos] = gold_parse[start_pos].lower()
+            find_and_decapitalize_first_word(gold_parse)
+
+        if remove_periods:
+            gold_parse = get_tree_without_periods(gold_parse)
 
         token_generator = gen_sentence(gold_parse)
         if not mock_right_branching:
             our_parse = predict_tree(model, " ".join(token_generator), key=key)
+            our_parse = InternalBinaryNode.to_nested_lists(our_parse)
         else:
             tokens = list(token_generator)
-            if len(tokens) > 12:
-                continue
             our_parse = right_branching_parse(tokens)
 
         yield gold_parse, our_parse
 
 
-def right_branching_parse(tokens):
-    if len(tokens) == 1:
-        return tokens[0]
-    else:
-        return [tokens[0], right_branching_parse(tokens[1:])]
-
-
 def get_brackets(tree, idx=0):
     """Taken from
     https://github.com/yikangshen/PRPN/blob/master/test_phrase_grammar.py"""
+    # TODO: Compare to to_indexed_contituents in Htut et al.
     brackets = set()
     if isinstance(tree, list) or isinstance(tree, Tree):
         for node in tree:
@@ -123,10 +106,12 @@ def get_p_r_f1(gold_tree, our_tree):
             precision = 1.
     f1 = 2 * precision * recall / (precision + recall + 1e-8)
 
+    # Note: for binary trees, all three metrics should be the same.
     return precision, recall, f1
 
 
 def tree_to_nested_lists(tree):
+    """Convert an NLTK tree to an unlabelled nested list format."""
     children = [child for child in tree]
     if len(children) == 1 and isinstance(children[0], str):
         return children[0]
@@ -137,21 +122,13 @@ def tree_to_nested_lists(tree):
 def eval_trees(tree_pairs):
     """Take a generator of (gold, predicted) trees and evaluate performance."""
     metrics = []
-
     for gold_tree, our_tree in tree_pairs:
-        gold_nested_lists = tree_to_nested_lists(gold_tree)
-        our_nested_lists = InternalBinaryNode.to_nested_lists(our_tree)
-
         print("=" * 50)
         print("--- Gold Parse ---")
-        print(gold_nested_lists)
-        # gold_tree.pretty_print()
+        print(gold_tree)
         print("--- Our Parse ---")
-        print(our_nested_lists)
-        # Tree.fromstring(our_tree.to_evalb()).pretty_print()
-
-        # Nested lists let us avoid issues with POS positions/lack of labels.
-        metrics.append(get_p_r_f1(gold_nested_lists, our_nested_lists))
+        print(our_tree)
+        metrics.append(get_p_r_f1(gold_tree, our_tree))
 
     print("\n\n" + "=" * 50)
     precisions, recalls, f1s = zip(*metrics)
@@ -160,15 +137,46 @@ def eval_trees(tree_pairs):
     print("F1:", np.mean(f1s))
 
 
+def right_branching_parse(tokens):
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        return [tokens[0], right_branching_parse(tokens[1:])]
+
+
+def htut_parse_to_nested_lists(htut_string):
+    tokens = htut_string.split(" ")
+    stack = []
+    for token in tokens:
+        if token == "(":
+            continue
+        elif token == ")":  # Reduce.
+            right_child = stack.pop(0)
+            left_child = stack.pop(0)
+            stack.insert(0, [left_child, right_child])
+        else:  # Shift.
+            stack.insert(0, token)
+    return stack[0]
+
+
+def gen_htut_nested_lists(filename):
+    """Read Htut-formatted binary trees from a .jsonl file."""
+    with open(filename) as in_file:
+        for line in in_file:
+            json_dict = json.loads(line)
+            htut_parse = json_dict["sentence1_binary_parse"]
+            yield htut_parse_to_nested_lists(htut_parse)
+
+
 if __name__ == "__main__":
     # Load the trained Linzen model.
     model_name = "linzen"
     vocab_path = "saved_models/vocabulary-linzen"
     swap = True
     kwargs = {
-        "decapitalize_first_word": True,
-        "ignore_periods": False,
         "mock_right_branching": True,
+        "decapitalize_first_word": True,
+        "remove_periods": False,
     }
     if swap:
         model_name += "-swap"
@@ -186,14 +194,16 @@ if __name__ == "__main__":
         model.load_state_dict(torch.load(fh))
 
     # The standard section for evaluation: WSJ23.
-    corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
-    corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
-    path = "predictions/%s/wsj-23" % model_name
-    kwargs["max_len"] = None  # Deprecated.
+    # corpus_root = "data/treebank_3/parsed/mrg/wsj/23"
+    # corpus = BracketParseCorpusReader(corpus_root, r".*\.mrg")
+    # trees = corpus.parsed_sents()
+    # kwargs["max_len"] = None  # Deprecated.
+
+    # Htut et al.'s binarized version of the WSJ23 corpus.
+    trees = gen_htut_nested_lists("data/ptb_sec23.jsonl")
 
     tree_pairs = gen_gold_and_test_trees(model,
-                                         corpus,
-                                         path,
+                                         trees,
                                          **kwargs)
 
     eval_trees(tree_pairs)
