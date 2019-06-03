@@ -185,7 +185,7 @@ if __name__ == "__main__":
         kwargs["key"] = "push_strengths"
     else:
         model_path = "saved_models/stack-%s.th" % model_name
-        kwargs["key"] = "pop_strength"
+        kwargs["key"] = "pop_strengths"
 
     # Load the vocabulary and model.
     vocab = Vocabulary.from_files(vocab_path)
