@@ -53,7 +53,7 @@ def gen_tree_pairs(model,
                    key="push_strengths",
                    swap=True,
                    decapitalize_first_word=True,
-                   mock_right_branching=False,
+                   mock_fn=None,
                    remove_periods=False):
     for ix, gold_parse in enumerate(gold_parses):
 
@@ -64,12 +64,12 @@ def gen_tree_pairs(model,
             gold_parse = get_tree_without_periods(gold_parse)
 
         token_generator = gen_sentence(gold_parse)
-        if not mock_right_branching:
+        if mock_fn is None:
             our_parse = predict_tree(model, " ".join(token_generator), key=key)
             our_parse = InternalBinaryNode.to_nested_lists(our_parse)
         else:
             tokens = list(token_generator)
-            our_parse = right_branching_parse(tokens)
+            our_parse = mock_fn(tokens)
 
         yield gold_parse, our_parse
 
@@ -144,6 +144,13 @@ def right_branching_parse(tokens):
         return [tokens[0], right_branching_parse(tokens[1:])]
 
 
+def left_branching_parse(tokens):
+    if len(tokens) == 1:
+        return tokens[0]
+    else:
+        return [left_branching_parse(tokens[:-1]), tokens[-1]]
+
+
 def htut_parse_to_nested_lists(htut_string):
     tokens = htut_string.split(" ")
     stack = []
@@ -173,7 +180,7 @@ if __name__ == "__main__":
     model_name = "linzen"
     swap = True
     kwargs = {
-        "mock_right_branching": False,
+        "mock_fn": left_branching_parse,
         "decapitalize_first_word": True,
         "remove_periods": False,
     }
