@@ -57,6 +57,10 @@ def gen_tree_pairs(model,
                    remove_periods=False):
     for ix, gold_parse in enumerate(gold_parses):
 
+        if max_len is not None and \
+           sum(1 for _ in gen_sentence(gold_parse)) > max_len:
+            continue
+
         if decapitalize_first_word:
             find_and_decapitalize_first_word(gold_parse)
 
@@ -180,9 +184,10 @@ if __name__ == "__main__":
     model_name = "linzen"
     swap = True
     kwargs = {
-        "mock_fn": left_branching_parse,
+        "mock_fn": None,
         "decapitalize_first_word": True,
         "remove_periods": False,
+        "max_len": None,
     }
 
     # Paths and parsing options depend on whether we use push or pop strength.
