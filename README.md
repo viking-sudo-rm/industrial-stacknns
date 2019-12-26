@@ -1,6 +1,6 @@
 # Industrial Stack Neural Networks
 
-This repository contains the code from the paper *Finding Syntactic Representations in Neural Stacks*, presented at BlackBox NLP 2019. We implement several stack RNN models for language modeling and agreement prediction, as well as a method for extracting unsupervised parse trees from the stack RNN models. If you are inspired by this project, please cite:
+This repository contains the code from the paper *Finding Syntactic Representations in Neural Stacks*, presented at BlackBox NLP 2019. Building on prior work, this paper analyzes the ability of stack RNNs to represent the compositional structure of natural language. We implement several stack RNN models for language modeling and agreement prediction, as well as a method for extracting unsupervised parse trees from trained stack RNN models. If you are inspired by this project, please cite:
 
 ```
 @inproceedings{merrill-etal-2019-finding,
